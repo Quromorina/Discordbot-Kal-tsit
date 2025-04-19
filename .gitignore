@@ -1,0 +1,15 @@
+# Python 仮想環境
+my_bot_env/
+
+# 環境変数ファイル (トークンとかAPIキー！)
+.env
+
+# Python のキャッシュファイルとか
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OSが勝手に作るファイル (任意)
+.DS_Store
+Thumbs.db

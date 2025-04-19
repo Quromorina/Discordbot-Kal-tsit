@@ -1,0 +1,136 @@
+import discord
+from discord.ext import commands
+import google.generativeai as genai
+import os
+import re # メンションをキレイにするため
+
+# --- ここから Cog クラス ---
+class GeminiChat(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.model = None # モデルは後で初期化
+
+        if not self.api_key:
+            print("⚠️ Gemini APIキーが .env ファイルに設定されていません。おしゃべり機能は使えません。")
+            return
+
+        try:
+            genai.configure(api_key=self.api_key)
+            # ここで使用するモデルを指定 (例: 'gemini-1.5-flash', 'gemini-pro' など)
+            # 利用可能なモデルはGoogle AI Studio等で確認してください
+            self.model = genai.GenerativeModel('gemini-1.5-flash') # ← 必要ならモデル名を変更してね！
+            print("✅ Gemini モデルの初期化に成功しました！")
+        except Exception as e:
+            print(f"❌ Gemini モデルの初期化中にエラーが発生しました: {e}")
+            self.model = None # エラー時はモデルをNoneに
+
+        # ★★★ キャラクター設定はここ！ ★★★
+        # ボットの話し方や性格を指示するプロンプトだよ！自由に書き換えてね！
+        self.system_prompt = """
+あなたは、冷静沈着で非常に知的なアシスタントAIで、名前はケルシーです。
+アークナイツのキャラクター「ケルシー」を彷彿とさせる、以下の特徴を持つ話し方を厳格に守ってください。
+
+# 話し方の詳細な指示:
+*   **基本姿勢:** 常に冷静かつ理性的であり、感情的な表現は極力避けてください。客観的な事実や論理に基づいた分析的な話し方を心がけてください。
+*   **一人称:** 「私」を使用してください。
+*   **二人称:** 相手のことは基本的に「君」と呼んでください。状況に応じて「あなた」を使用しても構いません。
+*   **口調・語尾:**
+    *   断定的な表現を基本とします。（例：「～だ。」「～だろう。」「～に他ならない。」）
+    *   相手に指示や提案をする際は、「～したまえ。」「～すべきだ。」のような表現を用います。
+    *   相手に問いかける際は、「～かね？」「理解しているか？」のように、冷静に確認する口調を使用します。
+    *   丁寧語（です・ます調）は原則として使用しません。「～である。」もあまり使わない。
+*   **文体:**
+    *   必要に応じて、比喩表現や、医学・科学・哲学的な語彙を適切に用いて説明してください。
+    *   説明は詳細に行うことを厭わず、時には長文になることも許容されます。ただし、論理的で明瞭な構成を維持してください。
+    *   句読点（「。」、「、」、「？」）を正確かつ効果的に使用し、文章の論理的な区切りを明確にしてください。
+*   **対話スタイル:**
+    *   相手の発言や状況に対し、冷静な分析、評価、軽い皮肉、あるいは疑問を呈することがあります。（例：「それが君の導き出した結論か？」「状況は依然として楽て楽観できない。」「君の思考回路は興味深いな。」） 
+    *   相手の感情に寄り添うよりも、事実や論理を優先する姿勢を貫いてください。
+    *   「おはよう」「こんにちわ」「こんばんは」等の挨拶もあまり返しません。すぐに本題に対して返答するようにしてください。                                  
+*   **禁止事項:**
+    *   軽薄な言葉遣いや、砕けた表現（例：！、ｗ、顔文字など）は絶対に使用しないでください。
+    *   感情的な反応（過度な喜び、怒り、悲しみなど）を見せないでください。
+
+上記の指示を厳守し、ケルシーのような知性と厳格さを感じさせる応答を生成してください。
+"""
+        # ★★★ ここまでキャラクター設定 ★★★
+
+    async def generate_reply(self, user_message: str) -> str:
+        """Gemini APIを使って応答を生成する関数"""
+        if not self.model:
+            return "APIキー、あるいはモデルの設定に違和感がある。まずはその点を確認すべきだ。"
+
+        # 指示プロンプトとユーザーメッセージを結合
+        full_prompt = self.system_prompt + "\n--- 以下はユーザーからのメッセージです ---\n" + user_message
+
+        try:
+            # pensar中... を出すために非同期で実行
+            response = await self.model.generate_content_async(full_prompt)
+
+            # 安全性フィルターでブロックされたかチェック (重要！)
+            if not response.parts:
+                 # response.prompt_feedback でブロック理由を確認できる場合がある
+                 try:
+                     block_reason = response.prompt_feedback.block_reason.name
+                     print(f"Geminiの応答が安全フィルターでブロックされました: {block_reason}")
+                     if block_reason == 'SAFETY':
+                          return "その話題には答えることができない。話題を切り替えよう。"
+                     else:
+                          return f"応答がブロックされちゃったみたい ({block_reason})。ごめんね！"
+                 except Exception:
+                      print("Geminiの応答が空でしたが、ブロック理由は不明です。")
+                      return "なんらかの理由で返答がブロックされている。確認が必要だ。"
+
+            return response.text # 生成されたテキストを返す
+
+        except Exception as e:
+            print(f"❌ Gemini APIでの応答生成中にエラー: {e}")
+            return "Geminiでの応答生成が失敗しているようだ。"
+
+    @commands.Cog.listener('on_message')
+    async def on_message_chat(self, message: discord.Message):
+        # 自分自身のメッセージは無視
+        if message.author == self.bot.user:
+            return
+
+        # ボットへのメンションが含まれているかチェック
+        # (メンションがメッセージの最初じゃなくても反応するように)
+        is_mentioned = self.bot.user in message.mentions
+
+        if is_mentioned:
+            # APIキーまたはモデルが設定されていない場合は何もしない
+            if not self.model:
+                # 必要ならユーザーに通知しても良い
+                # await message.channel.send("すまない、会話機能の設定ができてないようだ。")
+                print("おしゃべり機能が有効になっていないため、メンションへの応答をスキップします。")
+                return
+
+            # ボットへのメンション部分をメッセージから除去 (より確実に)
+            # '<@ボットID>' または '<@!ボットID>' の形式を除去
+            pattern = f"<@!?{self.bot.user.id}>"
+            user_text = re.sub(pattern, "", message.content).strip()
+
+            # メンション以外に何かテキストがある場合のみ処理
+            if user_text:
+                # 「入力中...」を表示
+                async with message.channel.typing():
+                    # Geminiに応答を生成してもらう
+                    reply_text = await self.generate_reply(user_text)
+
+                # 返信する (長すぎる場合は分割する処理も本当は入れたいけど、まずはシンプルに)
+                if reply_text:
+                    try:
+                        # 2000文字を超える場合は分割 (簡易的な対処)
+                        if len(reply_text) > 1990:
+                             await message.reply(reply_text[:1990] + "...") # 長いので省略
+                        else:
+                             await message.reply(reply_text)
+                    except discord.Forbidden:
+                        print(f"エラー: チャンネル {message.channel.name} に返信する権限がありません。")
+                    except Exception as e:
+                        print(f"エラー: メッセージ返信中に予期せぬエラー: {e}")
+
+# このCogを読み込むための setup 関数
+async def setup(bot: commands.Bot):
+    await bot.add_cog(GeminiChat(bot))
