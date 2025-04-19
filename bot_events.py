@@ -62,55 +62,57 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
         if not setting:
             # print(f"Debug: No specific setting found for VC {vc_id_str} in guild {guild_id}") # デバッグ用
             return # このVCの設定がない
+        # ★★★ 参加後のチャンネルメンバー数をチェック ★★★
+        if len(after.channel.members) == 1:
+            
+            # --- 設定が見つかった場合の処理 ---
+            role_id_str = setting.get("role_id")
+            text_channel_id_str = setting.get("text_channel_id")
 
-        # --- 設定が見つかった場合の処理 ---
-        role_id_str = setting.get("role_id")
-        text_channel_id_str = setting.get("text_channel_id")
+            if not role_id_str or not text_channel_id_str:
+                print(f"警告: VC {after.channel.name} の設定に role_id あるいは text_channel_id が不足している。")
+                return
 
-        if not role_id_str or not text_channel_id_str:
-            print(f"警告: VC {after.channel.name} の設定に role_id あるいは text_channel_id が不足している。")
-            return
+            try:
+                role = member.guild.get_role(int(role_id_str))
+                text_channel = member.guild.get_channel(int(text_channel_id_str))
+            except ValueError:
+                print(f"エラー: 設定ファイル内のID (Role: {role_id_str}, Channel: {text_channel_id_str}) が有効な数値ではないようだ。")
+                return
 
-        try:
-            role = member.guild.get_role(int(role_id_str))
-            text_channel = member.guild.get_channel(int(text_channel_id_str))
-        except ValueError:
-            print(f"エラー: 設定ファイル内のID (Role: {role_id_str}, Channel: {text_channel_id_str}) が有効な数値ではないようだ。")
-            return
+            if not role:
+                print(f"エラー: 指定されたロールが見つかりません (ID: {role_id_str})。設定を確認してください。")
+                # return # ロールが見つからなくても通知を送りたい場合はコメントアウト
+            if not text_channel:
+                print(f"エラー: 指定されたテキストチャンネルが見つかりません (ID: {text_channel_id_str})。通知は送信されません。")
+                return # 通知先チャンネルがないと意味がないのでここで終了
 
-        if not role:
-            print(f"エラー: 指定されたロールが見つかりません (ID: {role_id_str})。設定を確認してください。")
-            # return # ロールが見つからなくても通知を送りたい場合はコメントアウト
-        if not text_channel:
-            print(f"エラー: 指定されたテキストチャンネルが見つかりません (ID: {text_channel_id_str})。通知は送信されません。")
-            return # 通知先チャンネルがないと意味がないのでここで終了
+            # 通知メッセージ作成
+            embed = discord.Embed(
+                title=f"🔊 通話開始", # シンプルに
+                description=f"{member.mention} が <#{after.channel.id}> に参加したようだ。",
+                color=discord.Color.green() # 色を変更
+            )
 
-        # 通知メッセージ作成
-        embed = discord.Embed(
-            title=f"🔊 通話開始", # シンプルに
-            description=f"{member.mention} が <#{after.channel.id}> に参加したようだ。",
-            color=discord.Color.green() # 色を変更
-        )
+            embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
+            # member.display_name はニックネームも考慮してくれるよ！
+            # member.name だとユーザー名だけになる
 
-        embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
-        # member.display_name はニックネームも考慮してくれるよ！
-        # member.name だとユーザー名だけになる
+            # ★Footerにタイムスタンプを設定！
+            embed.set_footer(text=f"参加時刻: {timestamp_str}")
 
-        # ★Footerにタイムスタンプを設定！
-        embed.set_footer(text=f"参加時刻: {timestamp_str}")
-
-        # 通知メッセージ送信
-        try:
-            # ロールメンションを含めるかどうかの判断 (常にメンションするならこのまま)
-            content_msg = role.mention if role else None
-            await text_channel.send(content=content_msg, embed=embed)
-            print(f"通知を送信しました: サーバー「{member.guild.name}」のチャンネル「{text_channel.name}」へ")
-        except discord.Forbidden:
-             print(f"エラー: チャンネル「{text_channel.name}」にメッセージを送信する権限がありません。")
-        except discord.HTTPException as e:
-             print(f"エラー: Discord APIへのリクエスト中にエラーが発生しました (通知送信): {e}")
-        except Exception as e:
-            print(f"通知送信中に予期せぬエラーが発生しました: {e}")
+            # 通知メッセージ送信
+            try:
+                # ロールメンションを含めるかどうかの判断 (常にメンションするならこのまま)
+                content_msg = role.mention if role else None
+                await text_channel.send(content=content_msg, embed=embed)
+                print(f"通知を送信しました: サーバー「{member.guild.name}」のチャンネル「{text_channel.name}」へ")
+            except discord.Forbidden:
+                 print(f"エラー: チャンネル「{text_channel.name}」にメッセージを送信する権限がありません。")
+            except discord.HTTPException as e:
+                 print(f"エラー: Discord APIへのリクエスト中にエラーが発生しました (通知送信): {e}")
+            except Exception as e:
+                print(f"通知送信中に予期せぬエラーが発生しました: {e}")
 
     # (任意) VCから退出した場合の処理もここに追加できる
     # elif before.channel is not None and after.channel is None:
