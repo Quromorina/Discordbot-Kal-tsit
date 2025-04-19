@@ -27,7 +27,8 @@ async def load_extensions():
         'commands.janken',    # じゃんけん
         'commands.dice',      # ダイスロール
         'commands.configure', # 参加通知設定コマンド
-        'commands.gemini_chat' # Gemini AI
+        'commands.gemini_chat', # Gemini AI
+        'commands.system_info' # ラズパイステータス
     ]
     for extension in cog_files:
         try:
