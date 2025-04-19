@@ -2,6 +2,13 @@ import discord
 import json
 from datetime import datetime
 import os
+import pytz
+
+jst = pytz.timezone('Asia/Tokyo')
+# ↓↓↓ datetime.datetime.now じゃなくて datetime.now にする！ ↓↓↓
+current_time_jst = datetime.now(jst)
+timestamp_str = current_time_jst.strftime('%Y/%m/%d %H:%M:%S JST') # ← フッターに表示する文字列
+
 
 # 設定ファイルのパス (このファイルと同じディレクトリにあると仮定)
 CONFIG_FILE = os.path.join(os.path.dirname(__file__),'commands','config.json')
@@ -79,14 +86,18 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
             return # 通知先チャンネルがないと意味がないのでここで終了
 
         # 通知メッセージ作成
-        current_time = datetime.now().strftime("📅 %m/%d 🕒 %H:%M") # タイムゾーン考慮が必要なら別途対応
         embed = discord.Embed(
             title=f"🔊 通話開始", # シンプルに
-            description=f"{member.mention} が <#{after.channel.id}> に参加したようだ。\n{current_time}",
+            description=f"{member.mention} が <#{after.channel.id}> に参加したようだ。",
             color=discord.Color.green() # 色を変更
         )
-        # embed.set_author(name=str(member), icon_url=member.display_avatar.url) # 必要ならコメント解除
-        embed.set_thumbnail(url=member.display_avatar.url) # サムネイルにアイコン表示
+
+        embed.set_author(name=member.display_name, icon_url=member.display_avatar.url)
+        # member.display_name はニックネームも考慮してくれるよ！
+        # member.name だとユーザー名だけになる
+
+        # ★Footerにタイムスタンプを設定！
+        embed.set_footer(text=f"参加時刻: {timestamp_str}")
 
         # 通知メッセージ送信
         try:
