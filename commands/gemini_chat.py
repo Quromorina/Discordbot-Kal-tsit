@@ -207,22 +207,22 @@ class GeminiChat(commands.Cog):
 
         if user_text:
              # --- ▼▼▼ DB検索処理を追加 ▼▼▼ ---
-             found_op_name = None
-             db_context_data = ""
+            found_op_name = None
+            db_context_data = ""
 
              # 超シンプルなオペレーター名検出ロジック (改善の余地あり！)
              # メッセージに含まれる単語とDBのオペレーター名を比較？
              # または、特定のキーワード「について教えて」の前にある単語を取る？
              # まずは簡単なテストとして、「〇〇について教えて」の形式を仮定
-             match = re.search(r'(.+?)(について|のこと|の詳細|の情報)', user_text)
-             if match:
-                 potential_name = match.group(1).strip()
-                 print(f"Detected potential operator name: {potential_name}")
-                 # データベース検索を実行！
-                 db_context_data = self._find_operator_data(potential_name)
-                 if db_context_data:
-                     print(f"データベースから {potential_name} の情報を見つけました。")
-                     found_op_name = potential_name # 見つかったことを記録 (任意)
+            match = re.search(r'(.+?)(について|のこと|の詳細|の情報)', user_text)
+            if match:
+                potential_name = match.group(1).strip()
+                print(f"Detected potential operator name: {potential_name}")
+                # データベース検索を実行！
+                db_context_data = self._find_operator_data(potential_name)
+                if db_context_data:
+                    print(f"データベースから {potential_name} の情報を見つけました。")
+                    found_op_name = potential_name # 見つかったことを記録 (任意)
 
         # --- ▲▲▲ DB検索処理を追加 ▲▲▲ ---
             async with message.channel.typing():
