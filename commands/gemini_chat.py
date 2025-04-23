@@ -225,7 +225,6 @@ class GeminiChat(commands.Cog):
                      found_op_name = potential_name # 見つかったことを記録 (任意)
 
         # --- ▲▲▲ DB検索処理を追加 ▲▲▲ ---
-
             async with message.channel.typing():
                 # generate_reply に db_context_data を渡す！
                 reply_text = await self.generate_reply(user_text, db_context_data)
