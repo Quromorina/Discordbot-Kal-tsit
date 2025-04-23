@@ -155,6 +155,7 @@ class GeminiChat(commands.Cog):
         
         try:
             # pensar中... を出すために非同期で実行
+            print(f"--- Full Prompt to Gemini ---\n{full_prompt}\n---")
             response = await self.model.generate_content_async(full_prompt)
 
             # 安全性フィルターでブロックされたかチェック (重要！)
@@ -227,6 +228,7 @@ class GeminiChat(commands.Cog):
         # --- ▲▲▲ DB検索処理を追加 ▲▲▲ ---
             async with message.channel.typing():
                 # generate_reply に db_context_data を渡す！
+                print(f"--- DB Context Data ---\n{db_context_data}\n---")
                 reply_text = await self.generate_reply(user_text, db_context_data)
 
                 # 返信する (長すぎる場合は分割する処理も本当は入れたいけど、まずはシンプルに)
