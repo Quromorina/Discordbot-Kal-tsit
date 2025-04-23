@@ -3,6 +3,12 @@ from discord.ext import commands
 import google.generativeai as genai
 import os
 import re # メンションをキレイにするため
+import sqlite3
+
+# --- データベースファイルのパス ---
+# このファイル (gemini_chat.py) が commands/ の中にあるので、
+# データベース (my_bot 直下) へのパスは '..' で一つ上に戻る
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'arknights_data.db')
 
 # --- ここから Cog クラス ---
 class GeminiChat(commands.Cog):
@@ -10,10 +16,22 @@ class GeminiChat(commands.Cog):
         self.bot = bot
         self.api_key = os.getenv("GEMINI_API_KEY")
         self.model = None # モデルは後で初期化
+        self.db_path = DB_PATH # データベースパスを保持
 
-        if not self.api_key:
-            print("⚠️ Gemini APIキーが .env ファイルに設定されていません。おしゃべり機能は使えません。")
-            return
+        # ★★★ 起動時にデータベース接続テスト (任意だけど推奨) ★★★
+        if not os.path.exists(self.db_path):
+             print(f"🚨 データベースファイルが見つかりません: {self.db_path}")
+             print("🚨 Arknights情報機能は利用できません。")
+        else:
+             try:
+                 conn = sqlite3.connect(self.db_path)
+                 # 簡単なクエリでテーブルが存在するか確認
+                 conn.execute("SELECT name FROM operators LIMIT 1")
+                 conn.close()
+                 print(f"✅ データベース接続確認OK: {self.db_path}")
+             except sqlite3.Error as e:
+                 print(f"🚨 データベース接続またはテーブル確認中にエラー: {e}")
+                 print("🚨 Arknights情報機能は利用できません。")
 
         try:
             genai.configure(api_key=self.api_key)
@@ -74,15 +92,67 @@ class GeminiChat(commands.Cog):
         上記の指示を厳守し、ケルシーのような知性と厳格さを感じさせる応答を生成してください。
 """
         # ★★★ ここまでキャラクター設定 ★★★
+    # ★★★ データベースからオペレーター情報を検索するヘルパー関数 ★★★
+    def _find_operator_data(self, operator_name: str) -> str:
+        """指定されたオペレーター名をDBで検索し、整形した情報を文字列で返す"""
+        if not os.path.exists(self.db_path):
+            return "" # DBファイルがなければ空文字を返す
 
+        conn = None # conn を try の前に初期化
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row # カラム名でアクセスできるようにする
+            cursor = conn.cursor()
+
+            # 部分一致も考慮するなら name LIKE ? を使う (今回は完全一致で)
+            cursor.execute("SELECT * FROM operators WHERE name = ?", (operator_name,))
+            operator = cursor.fetchone()
+
+            if operator:
+                # データベースから取得した情報を分かりやすいテキストに整形
+                # (どの情報をGeminiに渡すかはここで選ぶ！)
+                info_parts = []
+                info_parts.append(f"名前: {operator['name']} (★{operator['rarity']})")
+                info_parts.append(f"クラス/職分: {operator['operator_class']} / {operator['archetype']}")
+                info_parts.append(f"所属/出身: {operator['affiliation']} / {operator['birthplace']}")
+                info_parts.append(f"種族: {operator['race']}")
+                # info_parts.append(f"能力測定: 物{operator['physical_strength']}, 機{operator['combat_skill']}, 耐{operator['mobility']}, 策{operator['endurance']}, 技{operator['tactical_acumen']}, 適{operator['arts_adaptability']}")
+                if operator['profile_summary']:
+                     info_parts.append(f"\nプロファイル概要:\n{operator['profile_summary'][:300]}...") # 長すぎるので最初の300文字
+                if operator['lore_notes']:
+                     info_parts.append(f"\n経歴・Lore:\n{operator['lore_notes'][:500]}...") # 長すぎるので最初の500文字
+                # スキル情報も追加？
+                if operator['skill1_name']: info_parts.append(f"\nS1: {operator['skill1_name']}\n   {operator['skill1_desc']}")
+                if operator['skill2_name']: info_parts.append(f"S2: {operator['skill2_name']}\n   {operator['skill2_desc']}")
+                if operator['skill3_name']: info_parts.append(f"S3: {operator['skill3_name']}\n   {operator['skill3_desc']}")
+                # 素質情報も追加？
+                if operator['talent1_name']: info_parts.append(f"\n素質1: {operator['talent1_name']}\n   {operator['talent1_desc']}")
+                if operator['talent2_name']: info_parts.append(f"素質2: {operator['talent2_name']}\n   {operator['talent2_desc']}")
+
+                return "\n".join(info_parts) # 各情報を改行で繋げた文字列を返す
+            else:
+                return "" # 見つからなければ空文字
+
+        except sqlite3.Error as e:
+            print(f"データベース検索中にエラー (オペレーター: {operator_name}): {e}")
+            return "" # エラー時も空文字
+        finally:
+            if conn:
+                conn.close() # 必ず接続を閉じる
+
+    
     async def generate_reply(self, user_message: str) -> str:
         """Gemini APIを使って応答を生成する関数"""
         if not self.model:
             return "APIキー、あるいはモデルの設定に違和感がある。まずはその点を確認すべきだ。"
 
-        # 指示プロンプトとユーザーメッセージを結合
-        full_prompt = self.system_prompt + "\n--- 以下はユーザーからのメッセージです ---\n" + user_message
-
+        # ★★★ プロンプトを組み立てる！ ★★★
+        if db_context: # データベース情報があれば、プロンプトに追加する
+            full_prompt = f"{self.system_prompt}\n\n--- 関連するデータベース情報 ---\n{db_context}\n\n--- 上記情報を最優先で参考にし、以下のユーザーメッセージに答えよ ---\n{user_message}"
+        else: # なければ、今まで通り
+            full_prompt = f"{self.system_prompt}\n\n--- 以下はユーザーからのメッセージです ---\n{user_message}"
+        # print(f"--- Sending Prompt to Gemini ---\n{full_prompt[:500]}...\n---") # デバッグ用にプロンプト確認
+        
         try:
             # pensar中... を出すために非同期で実行
             response = await self.model.generate_content_async(full_prompt)
@@ -90,16 +160,16 @@ class GeminiChat(commands.Cog):
             # 安全性フィルターでブロックされたかチェック (重要！)
             if not response.parts:
                  # response.prompt_feedback でブロック理由を確認できる場合がある
-                 try:
-                     block_reason = response.prompt_feedback.block_reason.name
-                     print(f"Geminiの応答が安全フィルターでブロックされました: {block_reason}")
-                     if block_reason == 'SAFETY':
-                          return "その話題には答えることができない。話題を切り替えよう。"
-                     else:
-                          return f"応答がブロックされちゃったみたい ({block_reason})。ごめんね！"
-                 except Exception:
-                      print("Geminiの応答が空でしたが、ブロック理由は不明です。")
-                      return "なんらかの理由で返答がブロックされている。確認が必要だ。"
+                try:
+                    block_reason = response.prompt_feedback.block_reason.name
+                    print(f"Geminiの応答が安全フィルターでブロックされました: {block_reason}")
+                    if block_reason == 'SAFETY':
+                        return "その話題には答えることができない。話題を切り替えよう。"
+                    else:
+                        return f"応答がブロックされちゃったみたい ({block_reason})。ごめんね！"
+                except Exception:
+                    print("Geminiの応答が空でしたが、ブロック理由は不明です。")
+                    return "なんらかの理由で返答がブロックされている。確認が必要だ。"
 
             return response.text # 生成されたテキストを返す
 
@@ -107,16 +177,21 @@ class GeminiChat(commands.Cog):
             print(f"❌ Gemini APIでの応答生成中にエラー: {e}")
             return "Geminiでの応答生成が失敗しているようだ。"
 
+    # ★★★ on_message_chat リスナーを修正: DB検索処理を追加 ★★★
     @commands.Cog.listener('on_message')
     async def on_message_chat(self, message: discord.Message):
-        # 自分自身のメッセージは無視
-        if message.author == self.bot.user:
-            return
-
-        # ボットへのメンションが含まれているかチェック
-        # (メンションがメッセージの最初じゃなくても反応するように)
+        if message.author == self.bot.user: return
         is_mentioned = self.bot.user in message.mentions
+        if not is_mentioned: return # メンションがなければ無視 (シンプル化)
 
+        if not self.model:
+            print("おしゃべり機能が無効のためスキップします。")
+            return
+            
+        # メンション除去
+        pattern = f"<@!?{self.bot.user.id}>"
+        user_text = re.sub(pattern, "", message.content).strip()
+        
         if is_mentioned:
             # APIキーまたはモデルが設定されていない場合は何もしない
             if not self.model:
@@ -129,6 +204,31 @@ class GeminiChat(commands.Cog):
             # '<@ボットID>' または '<@!ボットID>' の形式を除去
             pattern = f"<@!?{self.bot.user.id}>"
             user_text = re.sub(pattern, "", message.content).strip()
+
+        if user_text:
+             # --- ▼▼▼ DB検索処理を追加 ▼▼▼ ---
+             found_op_name = None
+             db_context_data = ""
+
+             # 超シンプルなオペレーター名検出ロジック (改善の余地あり！)
+             # メッセージに含まれる単語とDBのオペレーター名を比較？
+             # または、特定のキーワード「について教えて」の前にある単語を取る？
+             # まずは簡単なテストとして、「〇〇について教えて」の形式を仮定
+             match = re.search(r'(.+?)(について|のこと|の詳細|の情報)', user_text)
+             if match:
+                 potential_name = match.group(1).strip()
+                 print(f"Detected potential operator name: {potential_name}")
+                 # データベース検索を実行！
+                 db_context_data = self._find_operator_data(potential_name)
+                 if db_context_data:
+                     print(f"データベースから {potential_name} の情報を見つけました。")
+                     found_op_name = potential_name # 見つかったことを記録 (任意)
+
+        # --- ▲▲▲ DB検索処理を追加 ▲▲▲ ---
+
+            async with message.channel.typing():
+                # generate_reply に db_context_data を渡す！
+                reply_text = await self.generate_reply(user_text, db_context_data)
 
             # メンション以外に何かテキストがある場合のみ処理
             if user_text:
