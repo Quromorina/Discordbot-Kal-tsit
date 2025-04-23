@@ -141,7 +141,7 @@ class GeminiChat(commands.Cog):
                 conn.close() # 必ず接続を閉じる
 
     
-    async def generate_reply(self, user_message: str) -> str:
+    async def generate_reply(self, user_message: str, db_context: str = "") -> str:
         """Gemini APIを使って応答を生成する関数"""
         if not self.model:
             return "APIキー、あるいはモデルの設定に違和感がある。まずはその点を確認すべきだ。"
@@ -228,13 +228,6 @@ class GeminiChat(commands.Cog):
             async with message.channel.typing():
                 # generate_reply に db_context_data を渡す！
                 reply_text = await self.generate_reply(user_text, db_context_data)
-
-            # メンション以外に何かテキストがある場合のみ処理
-            if user_text:
-                # 「入力中...」を表示
-                async with message.channel.typing():
-                    # Geminiに応答を生成してもらう
-                    reply_text = await self.generate_reply(user_text)
 
                 # 返信する (長すぎる場合は分割する処理も本当は入れたいけど、まずはシンプルに)
                 if reply_text:
