@@ -146,7 +146,6 @@ class GeminiChat(commands.Cog):
             if conn:
                 conn.close() # 必ず接続を閉じる
 
-    
     async def generate_reply(self, user_message: str, db_context: str = "") -> str:
         """Gemini APIを使って応答を生成する関数"""
         if not self.model:
@@ -189,6 +188,41 @@ class GeminiChat(commands.Cog):
         except Exception as e:
             print(f"❌ Gemini APIでの応答生成中にエラー: {e}")
             return "Geminiでの応答生成が失敗しているようだ。"
+
+    # ★★★ 新しいメソッドを追加！ ★★★
+    async def generate_commentary(self, context: str, instruction: str) -> str:
+        """提供されたコンテキストと指示に基づいて、設定されたペルソナで応答を生成する"""
+        if not self.model:
+            return "思考モジュールが初期化されていない。管理者への連絡を推奨する。" # ケルシー風エラー
+
+        # ★★★ プロンプトを組み立てる ★★★
+        # 基本ペルソナ + コンテキスト(天気情報など) + 指示(服装アドバイスして等)
+        full_prompt = f"{self.system_prompt}\n\n--- 提供された情報 ---\n{context}\n\n--- 指示 ---\n{instruction}"
+
+        print(f"--- Sending Commentary Prompt to Gemini ---\n{full_prompt[:500]}...\n---") # デバッグ用
+
+        try:
+            # ★ API呼び出しとエラー/安全性チェックは generate_reply とほぼ同じ ★
+            response = await self.model.generate_content_async(full_prompt)
+
+            if not response.parts:
+                 try:
+                     block_reason = response.prompt_feedback.block_reason.name
+                     print(f"Gemini Commentary response blocked: {block_reason}")
+                     if block_reason == 'SAFETY':
+                          return "指示された内容に関する見解の生成は、安全上の理由から拒否された。"
+                     else:
+                          return f"応答生成が予期せずブロックされた ({block_reason})。"
+                 except Exception:
+                      print("Gemini Commentary response empty, reason unknown.")
+                      return "応答の生成中に問題が発生した。理由は不明だ。"
+
+            return response.text # 生成されたテキストを返す
+
+        except Exception as e:
+            print(f"❌ Gemini APIでの解説生成中にエラー: {e}")
+            return "思考モジュールの応答生成プロセスでエラーが確認された。"
+
 
     # ★★★ on_message_chat リスナーを修正: DB検索処理を追加 ★★★
     @commands.Cog.listener('on_message')
