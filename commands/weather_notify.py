@@ -55,6 +55,13 @@ class WeatherNotify(commands.Cog):
         base_url = "http://api.openweathermap.org/data/2.5/forecast?"
         complete_url = base_url + "appid=" + self.api_key + "&q=" + self.city + "&lang=ja&units=metric&cnt=12"
 
+        # ★★★ 絵文字マップは関数の最初の方で1回だけ定義！ ★★★
+        emoji_map = {
+            "01d": "☀️", "01n": "🌙", "02d": "🌤️", "02n": "☁️", "03d": "☁️", "03n": "☁️",
+            "04d": "☁️", "04n": "☁️", "09d": "🌧️", "09n": "🌧️", "10d": "🌦️", "10n": "🌧️",
+            "11d": "⛈️", "11n": "⛈️", "13d": "❄️", "13n": "❄️", "50d": "🌫️", "50n": "🌫️",
+        }
+        
         try:
             response = requests.get(complete_url)
             response.raise_for_status()
@@ -62,6 +69,8 @@ class WeatherNotify(commands.Cog):
 
             if data["cod"] == "200": # ステータスコードが "200" なら成功
                 forecast_list = data.get("list", [])
+
+                # ★★★ リストが空か最初にチェック！ ★★★
                 if not forecast_list:
                     return f"{self.city} の予報データが取得できませんでした。"
 
@@ -79,6 +88,12 @@ class WeatherNotify(commands.Cog):
                 current_humidity = current_main.get('humidity') # ★ 湿度を取得！
                 current_wind_speed = current_wind.get('speed') # ★ 風速を取得！
                 current_icon = current_weather.get('icon') # アイコンも取れる
+
+                # ★★★ 現在の天気情報を先に整形 ★★★
+                current_temp_str = f"{current_temp:.1f}°C" if isinstance(current_temp, (int, float)) else "N/A"
+                current_humidity_str = f"{current_humidity}%" if isinstance(current_humidity, (int, float)) else "N/A"
+                current_wind_str = f"{current_wind_speed:.1f} m/s" if isinstance(current_wind_speed, (int, float)) else "N/A"
+                current_emoji = emoji_map.get(current_icon, "❔") # 絵文字マップを使う
 
                 # --- 3時間ごとの予報 (指定範囲だけ抽出！)  ---
                 forecast_parts = []
@@ -103,30 +118,9 @@ class WeatherNotify(commands.Cog):
                         desc = forecast_entry.get("weather", [{}])[0].get('description')
                         icon = forecast_entry.get("weather", [{}])[0].get('icon', '')
                         icon = forecast_entry.get("weather", [{}])[0].get('icon', '')
-                        
                         temp_str = f"{temp:.0f}°C" if isinstance(temp, (int, float)) else "N/A"
                         emoji = emoji_map.get(icon, "❔")
                         forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}") # 絵文字と説明を表示
-                    
-                    # ★★★ アイコンコードから絵文字を選ぶ (対応表) ★★★
-                    # (もっとたくさん追加できるよ！ OpenWeatherMapのドキュメント見てね！)
-                    emoji_map = {
-                    "01d": "☀️", "01n": "🌙", # 快晴
-                    "02d": "🌤️", "02n": "☁️", # 晴れ時々曇り
-                    "03d": "☁️", "03n": "☁️", # 曇り
-                    "04d": "☁️", "04n": "☁️", # 厚い雲 (同じでいいかな？)
-                    "09d": "🌧️", "09n": "🌧️", # にわか雨
-                    "10d": "🌦️", "10n": "🌧️", # 雨
-                    "11d": "⛈️", "11n": "⛈️", # 雷雨
-                    "13d": "❄️", "13n": "❄️", # 雪
-                    "50d": "🌫️", "50n": "🌫️", # 霧
-                }
-    
-                # --- 最終的なメッセージを組み立て ---
-                current_temp_str = f"{current_temp:.1f}°C" if isinstance(current_temp, (int, float)) else "N/A"
-                current_humidity_str = f"{current_humidity}%" if isinstance(current_humidity, (int, float)) else "N/A"
-                current_wind_str = f"{current_wind_speed:.1f} m/s" if isinstance(current_wind_speed, (int, float)) else "N/A"
-                current_emoji = emoji_map.get(current_icon, "❔")
 
                 # メッセージを作成
                 forecast_text = "\n".join(forecast_parts)
@@ -143,7 +137,9 @@ class WeatherNotify(commands.Cog):
                 )
                 return message
             else:
-                return f"都市「{self.city}」が見つかりませんでした。"
+                error_message = data.get("message", "不明なエラー")
+                print(f"天気APIエラー: Code={data.get('cod')} Message={error_message}")
+                return f"都市「{self.city}」の天気情報取得に失敗しました (Code: {data.get('cod')})。"
                 
         # (エラー処理は前のままでも良いけど、requests 用に調整)
         except requests.exceptions.RequestException as e:
