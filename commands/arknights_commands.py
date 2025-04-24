@@ -21,10 +21,10 @@ class ArknightsCommands(commands.Cog):
         else:
              print(f"✅ データベースファイル確認OK: {self.db_path}")
 
-    # ★★★ /arknights_search スラッシュコマンド定義 ★★★
-    @app_commands.command(name="arknights_search", description="アークナイツのオペレーター情報を検索します。")
+    # ★★★ /search スラッシュコマンド定義 ★★★
+    @app_commands.command(name="search", description="アークナイツのオペレーター情報を検索します。")
     @app_commands.describe(operator_name="検索したいオペレーターの名前（例：ジェシカ）")
-    async def arknights_search(self, interaction: discord.Interaction, operator_name: str):
+    async def search(self, interaction: discord.Interaction, operator_name: str):
         # Thinky face を表示 (処理に時間かかるかもなので)
         await interaction.response.defer(ephemeral=False) # ephemeral=True だと本人にしか見えない
 

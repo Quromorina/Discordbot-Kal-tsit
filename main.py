@@ -30,7 +30,7 @@ async def load_extensions():
         'commands.gemini_chat', # Gemini AI
         'commands.system_info', # ラズパイステータス
         'commands.weather_notify', #天気
-        'commands.arknights_commands', # アークナイツオペレーターサーチ
+        'commands.arknights_commands' # アークナイツオペレーターサーチ
     ]
     for extension in cog_files:
         try:
