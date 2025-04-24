@@ -11,13 +11,22 @@ TARGET_USER_ID_STR = os.getenv("WEATHER_USER_ID")
 TARGET_CITY = os.getenv("WEATHER_CITY_NAME", "Tokyo,JP") # デフォルトは東京
 NOTIFY_TIME_STR = os.getenv("WEATHER_NOTIFY_TIME", "06:00") # デフォルトは7:00
 
-# 文字列から数値や時刻オブジェクトに変換
+# 文字列から数値に変換
 TARGET_USER_ID = int(TARGET_USER_ID_STR) if TARGET_USER_ID_STR else None
 notify_hour, notify_minute = map(int, NOTIFY_TIME_STR.split(':'))
-# ★★★ 日本時間(JST)で指定された時刻に実行するように設定 ★★★
 jst = pytz.timezone('Asia/Tokyo')
-NOTIFY_TIME_UTC = time(hour=notify_hour, minute=notify_minute, tzinfo=jst).astimezone(pytz.utc)
-print(f"Weather Notify Time (UTC): {NOTIFY_TIME_UTC.strftime('%H:%M')}")
+
+# ↓↓↓ JST時刻をUTC時刻に正しく変換する処理 ↓↓↓
+try:
+    now_jst = datetime.now(jst)                                                                       # 1. とりあえず現在時刻を取得して「今日」の日付情報を得る
+    target_dt_jst = now_jst.replace(hour=notify_hour, minute=notify_minute, second=0, microsecond=0)　# 2. 「今日」の日付と、指定された通知時刻(JST)を組み合わせる
+    target_dt_utc = target_dt_jst.astimezone(pytz.utc)                                                # 3. JSTのdatetimeオブジェクトをUTCに変換する
+    NOTIFY_TIME_UTC = target_dt_utc.time()　                                                          # 4. UTCに変換されたdatetimeオブジェクトから「時刻」の部分だけを取り出す！
+    print(f"Weather Notify Time (UTC): {NOTIFY_TIME_UTC.strftime('%H:%M')}")
+except Exception as e:
+    # もし時刻変換でエラーが起きたら、とりあえずUTCの0時を使う (フォールバック)
+    print(f"🚨 通知時刻の計算中にエラー: {e}. UTC 00:00 を使用します。")
+    NOTIFY_TIME_UTC = time(hour=0, minute=0, tzinfo=pytz.utc)
 
 
 class WeatherNotify(commands.Cog):
