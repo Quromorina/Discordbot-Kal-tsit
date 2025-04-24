@@ -170,12 +170,52 @@ class WeatherNotify(commands.Cog):
         else:
             print(f"エラー: 通知先のユーザーID {self.target_user_id} が見つかりませんでした。")
 
+        # --- 1. 天気予報を取得 ---
+        weather_message = await self._get_weather_info()
+        if "エラー" in weather_message or "取得できませんでした" in weather_message or "見つかりませんでした" in weather_message:
+             print(f"天気予報取得失敗のためスキップ: {weather_message}")
+             # (エラーメッセージ送信処理は省略)
+             return
+        
+        # --- 2. GeminiChat Cog を取得 ---
+        gemini_cog: GeminiChat = self.bot.get_cog('GeminiChat') # 型ヒントを追加(任意)
+        if not gemini_cog or not gemini_cog.model: # GeminiCogがないか、モデルが初期化されてない場合
+            print("🚨 GeminiChat Cog またはモデルが見つからないため、天気解説はスキップします。")
+            # 天気予報だけ送る
+            try:
+                 await target_user.send(weather_message)
+                 print(f"ユーザーID {self.target_user_id} に天気予報のみDM送信しました。")
+            except Exception as e:
+                 print(f"天気予報のみDM送信中にエラー: {e}")
+            return
+        
+        # --- 3. Gemini に渡す指示を作成 ---
+        instruction = "上記の天気予報データに基づき、今日の活動で注意すべき点、及び推奨される服装について、君の見解を簡潔に述べたまえ。"
+
+        # --- 4. GeminiChat Cog の新メソッドを呼び出す！ ---
+        print("GeminiChat Cog に天気予報の解説をリクエスト中...")
+        advice_text = "思考モジュールからの応答がなかった。" # デフォルトのエラーメッセージ
+        try:
+            async with target_user.typing():
+                 # ★★★ ここで generate_commentary を呼び出す！ ★★★
+                advice_text = await gemini_cog.generate_commentary(context=weather_message, instruction=instruction)
+        except Exception as e:
+            print(f"❌ Gemini解説生成呼び出し中にエラー: {e}")
+            # advice_text はデフォルトのエラーメッセージのまま
+
+        # --- 5. 結果をDMで送信 (変更なし) ---
+        final_dm_message = f"ドクター、今日の天候予測と思索結果を報告する。\n\n{weather_message}\n\n---\n{advice_text}"
+        try:
+            # ... (メッセージ送信処理) ...
+            await target_user.send(final_dm_message)
+            print(f"ユーザーID {self.target_user_id} に天気予報とAI解説をDMで送信しました。")
+        except Exception as e:
+            print(f"最終DM送信中にエラー: {e}")
+
     # ループ開始前にボットの準備が完了するのを待つ
     @daily_weather_check.before_loop
     async def before_daily_check(self):
-        print("Waiting for bot to be ready before starting weather loop...")
         await self.bot.wait_until_ready()
-        print("Bot is ready, weather loop will start at the specified time.")
 
 # Cogを読み込むための setup 関数
 async def setup(bot: commands.Bot):
