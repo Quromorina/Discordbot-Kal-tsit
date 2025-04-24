@@ -110,10 +110,10 @@ class WeatherNotify(commands.Cog):
                     "13d": "❄️", "13n": "❄️", # 雪
                     "50d": "🌫️", "50n": "🌫️", # 霧
                 }
-                emoji = emoji_map.get(icon, "❔") # マップになければ「？」
-
-
-                # 変数を安全に表示できるように調整 & 最高/最低気温を削除
+                    emoji = emoji_map.get(icon, "❔") # マップになければ「？」
+                    forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}") # 絵文字と説明を表示
+                    
+                # --- 最終的なメッセージを組み立て ---
                 current_temp_str = f"{current_temp:.1f}°C" if isinstance(current_temp, (int, float)) else "N/A"
                 current_humidity_str = f"{current_humidity}%" if isinstance(current_humidity, (int, float)) else "N/A"
                 current_wind_str = f"{current_wind_speed:.1f} m/s" if isinstance(current_wind_speed, (int, float)) else "N/A"
