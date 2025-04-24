@@ -18,10 +18,10 @@ jst = pytz.timezone('Asia/Tokyo')
 
 # ↓↓↓ JST時刻をUTC時刻に正しく変換する処理 ↓↓↓
 try:
-    now_jst = datetime.now(jst)                                                                       # 1. とりあえず現在時刻を取得して「今日」の日付情報を得る
-    target_dt_jst = now_jst.replace(hour=notify_hour, minute=notify_minute, second=0, microsecond=0)　# 2. 「今日」の日付と、指定された通知時刻(JST)を組み合わせる
-    target_dt_utc = target_dt_jst.astimezone(pytz.utc)                                                # 3. JSTのdatetimeオブジェクトをUTCに変換する
-    NOTIFY_TIME_UTC = target_dt_utc.time()　                                                          # 4. UTCに変換されたdatetimeオブジェクトから「時刻」の部分だけを取り出す！
+    now_jst = datetime.now(jst)
+    target_dt_jst = now_jst.replace(hour=notify_hour, minute=notify_minute, second=0, microsecond=0)
+    target_dt_utc = target_dt_jst.astimezone(pytz.utc)
+    NOTIFY_TIME_UTC = target_dt_utc.time()
     print(f"Weather Notify Time (UTC): {NOTIFY_TIME_UTC.strftime('%H:%M')}")
 except Exception as e:
     # もし時刻変換でエラーが起きたら、とりあえずUTCの0時を使う (フォールバック)
