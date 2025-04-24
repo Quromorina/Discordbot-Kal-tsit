@@ -62,7 +62,7 @@ async def on_ready():
 
     # ステータスメッセージ設定
     try:
-        activity = discord.CustomActivity(name="ロドスアイランドに所属") # ステータスを変更
+        activity = discord.CustomActivity(name="ロドスアイランド(シラクーザに停泊中)") # ステータスを変更
         await bot.change_presence(status=discord.Status.online, activity=activity)
 
     except Exception as e:
