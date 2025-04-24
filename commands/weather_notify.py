@@ -77,8 +77,10 @@ class WeatherNotify(commands.Cog):
                 current_dt_jst = current_dt_utc.astimezone(jst)
                 current_time_str = current_dt_jst.strftime('%H:%M JST')
 
-                current_temp = current_main.get('temp', 'N/A')
+                current_temp = current_main.get('temp')
                 current_desc = current_weather.get('description', 'N/A')
+                current_humidity = current_main.get('humidity') # ★ 湿度を取得！
+                current_wind_speed = current_wind.get('speed') # ★ 風速を取得！
                 current_icon = current_weather.get('icon') # アイコンも取れる
 
                 # --- 3時間ごとの予報 (リストの2番目から8個 = 約24時間分) ---
@@ -102,16 +104,20 @@ class WeatherNotify(commands.Cog):
                     elif "雷" in desc: emoji = "⚡"
 
                     forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}")
-                    
+
+
+                # 変数を安全に表示できるように調整 & 最高/最低気温を削除
+                current_temp_str = f"{current_temp:.1f}°C" if isinstance(current_temp, (int, float)) else "N/A"
+                current_humidity_str = f"{current_humidity}%" if isinstance(current_humidity, (int, float)) else "N/A"
+                current_wind_str = f"{current_wind_speed:.1f} m/s" if isinstance(current_wind_speed, (int, float)) else "N/A"
+
                 forecast_text = "\n".join(forecast_parts)
                 # メッセージを作成
                 message = (
                     f"おはよう、ドクター。\n"
                     f"{self.city} の今日の天候を通知する。\n"
                     f"現在の天気: {current_desc} {current_temp}°C\n"
-                    f"気温: {temp:.1f}°C (最高: {temp_max:.1f}°C / 最低: {temp_min:.1f}°C)\n"
-                    f"湿度: {humidity}%\n"
-                    f"風速: {wind_speed:.1f} m/s\n"
+                    f"湿度: {current_humidity_str} / 風速: {current_wind_str}\n"
                     f"--- 3時間ごと予報 ---\n"
                     f"{forecast_text}\n"
                 )
