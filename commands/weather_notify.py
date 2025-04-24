@@ -94,29 +94,37 @@ class WeatherNotify(commands.Cog):
                     desc = forecast_entry.get("weather", [{}])[0].get('description')
                     # アイコンも取れる icon = forecast_entry.get("weather", [{}])[0].get('icon')
 
+                    icon = forecast_entry.get("weather", [{}])[0].get('icon', '')
                     temp_str = f"{temp:.0f}°C" if isinstance(temp, (int, float)) else "N/A"
-                    # 簡単な絵文字マッピング (適宜追加・修正してね！)
-                    emoji = "❔"
-                    if "晴" in desc: emoji = "☀️"
-                    elif "曇" in desc: emoji = "☁️"
-                    elif "雨" in desc: emoji = "🌧️"
-                    elif "雪" in desc: emoji = "❄️"
-                    elif "雷" in desc: emoji = "⚡"
-
-                    forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}")
+                    
+                    # ★★★ アイコンコードから絵文字を選ぶ (対応表) ★★★
+                    # (もっとたくさん追加できるよ！ OpenWeatherMapのドキュメント見てね！)
+                    emoji_map = {
+                    "01d": "☀️", "01n": "🌙", # 快晴
+                    "02d": "🌤️", "02n": "☁️", # 晴れ時々曇り
+                    "03d": "☁️", "03n": "☁️", # 曇り
+                    "04d": "☁️", "04n": "☁️", # 厚い雲 (同じでいいかな？)
+                    "09d": "🌧️", "09n": "🌧️", # にわか雨
+                    "10d": "🌦️", "10n": "🌧️", # 雨
+                    "11d": "⛈️", "11n": "⛈️", # 雷雨
+                    "13d": "❄️", "13n": "❄️", # 雪
+                    "50d": "🌫️", "50n": "🌫️", # 霧
+                }
+                emoji = emoji_map.get(icon, "❔") # マップになければ「？」
 
 
                 # 変数を安全に表示できるように調整 & 最高/最低気温を削除
                 current_temp_str = f"{current_temp:.1f}°C" if isinstance(current_temp, (int, float)) else "N/A"
                 current_humidity_str = f"{current_humidity}%" if isinstance(current_humidity, (int, float)) else "N/A"
                 current_wind_str = f"{current_wind_speed:.1f} m/s" if isinstance(current_wind_speed, (int, float)) else "N/A"
+                current_emoji = emoji_map.get(current_icon, "❔")
 
-                forecast_text = "\n".join(forecast_parts)
                 # メッセージを作成
+                forecast_text = "\n".join(forecast_parts)
                 message = (
                     f"おはよう、ドクター。\n"
-                    f"{self.city} の今日の天候を通知する。\n"
-                    f"現在の天気: {current_desc} {current_temp}°C\n"
+                    f"東京の今日の天候を表示する。\n"
+                    f"現在の天気: {current_emoji}{current_desc} {current_temp_str}\n"
                     f"湿度: {current_humidity_str} / 風速: {current_wind_str}\n"
                     f"--- 3時間ごと予報 ---\n"
                     f"{forecast_text}\n"
