@@ -152,9 +152,16 @@ class GeminiChat(commands.Cog):
         if not self.model:
             return "APIキー、あるいはモデルの設定に違和感がある。まずはその点を確認すべきだ。"
 
+        arknights_basics = """
+--- アークナイツ世界の基礎知識 ---
+・ロドス・アイランドは製薬会社であり、移動都市を拠点とする組織である。現実のロドス島とは異なる。
+・鉱石病は不治の病であり、感染者は源石(オリジニウム)アーツを使用できるが、身体が結晶化し死に至る。
+・アークナイツ世界の大陸であるテラは、多くの国家や種族が存在する世界である。
+""" # Example
+
         # ★★★ プロンプトを組み立てる！ ★★★
         if db_context: # データベース情報があれば、プロンプトに追加する
-            full_prompt = f"{self.system_prompt}\n\n--- 関連するデータベース情報 ---\n{db_context}\n\n--- 上記情報を最優先で参考にし、以下のユーザーメッセージに答えよ ---\n{user_message}"
+            full_prompt = f"{self.system_prompt}\n{arknights_basics}\n\n--- 関連するデータベース情報 ---\n{db_context}\n\n--- 上記情報を最優先で参考にし、以下のユーザーメッセージに答えよ ---\n{user_message}"
         else: # なければ、今まで通り
             full_prompt = f"{self.system_prompt}\n\n--- 以下はユーザーからのメッセージです ---\n{user_message}"
         # print(f"--- Sending Prompt to Gemini ---\n{full_prompt[:500]}...\n---") # デバッグ用にプロンプト確認
