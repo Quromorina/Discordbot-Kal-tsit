@@ -53,14 +53,11 @@ class WeatherNotify(commands.Cog):
 
         # ★★★ APIエンドポイントを /forecast に変更！ ★★★
         base_url = "http://api.openweathermap.org/data/2.5/forecast?"
-        # cnt=9 で約24時間分 (現在+未来8回分 = 9データ点) を取得 (API仕様による)
-        complete_url = base_url + "appid=" + self.api_key + "&q=" + self.city + "&lang=ja&units=metric&cnt=9"
+        complete_url = base_url + "appid=" + self.api_key + "&q=" + self.city + "&lang=ja&units=metric&cnt=12"
 
         try:
-            # ★★★ 非同期でリクエストを送るなら aiohttp が望ましいけど、まずは requests で試す ★★★
-            # (もしボットが他の処理中に固まるのが気になるなら、後で aiohttp に変える)
             response = requests.get(complete_url)
-            response.raise_for_status() # エラーがあれば例外を発生させる
+            response.raise_for_status()
             data = response.json()
 
             if data["cod"] == "200": # ステータスコードが "200" なら成功
@@ -83,19 +80,33 @@ class WeatherNotify(commands.Cog):
                 current_wind_speed = current_wind.get('speed') # ★ 風速を取得！
                 current_icon = current_weather.get('icon') # アイコンも取れる
 
-                # --- 3時間ごとの予報 (リストの2番目から8個 = 約24時間分) ---
+                # --- 3時間ごとの予報 (指定範囲だけ抽出！)  ---
                 forecast_parts = []
-                # forecast_list[1:9] で、2番目から最大9番目までを取得 (最大8件)
-                for forecast_entry in forecast_list[1:9]:
+                # 今日の日付と明日の日付をJSTで取得
+                today_jst_date = datetime.now(jst).date()
+                tomorrow_jst_date = today_jst_date + timedelta(days=1)
+                
+                # APIから取得した全予報データをチェック
+                for forecast_entry in forecast_list:
                     dt_utc = datetime.fromtimestamp(forecast_entry.get('dt', 0), tz=timezone.utc)
-                    dt_jst = dt_utc.astimezone(jst)
-                    time_str = dt_jst.strftime('%H時') # 例: "09時"
-                    temp = forecast_entry.get("main", {}).get('temp')
-                    desc = forecast_entry.get("weather", [{}])[0].get('description')
-                    # アイコンも取れる icon = forecast_entry.get("weather", [{}])[0].get('icon')
+                    dt_jst = dt_utc.astimezone(jst) # JSTに変換
 
-                    icon = forecast_entry.get("weather", [{}])[0].get('icon', '')
-                    temp_str = f"{temp:.0f}°C" if isinstance(temp, (int, float)) else "N/A"
+                    # ★★★ フィルタリング条件 ★★★
+                    # 今日の6時以降 OR 明日の3時以前 かどうか
+                    is_today_target = (dt_jst.date() == today_jst_date and dt_jst.hour >= 6)
+                    is_tomorrow_target = (dt_jst.date() == tomorrow_jst_date and dt_jst.hour <= 3)
+
+                    # 条件に合致したらリストに追加
+                    if is_today_target or is_tomorrow_target:
+                        time_str = dt_jst.strftime('%H時')
+                        temp = forecast_entry.get("main", {}).get('temp')
+                        desc = forecast_entry.get("weather", [{}])[0].get('description')
+                        icon = forecast_entry.get("weather", [{}])[0].get('icon', '')
+                        icon = forecast_entry.get("weather", [{}])[0].get('icon', '')
+                        
+                        temp_str = f"{temp:.0f}°C" if isinstance(temp, (int, float)) else "N/A"
+                        emoji = emoji_map.get(icon, "❔")
+                        forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}") # 絵文字と説明を表示
                     
                     # ★★★ アイコンコードから絵文字を選ぶ (対応表) ★★★
                     # (もっとたくさん追加できるよ！ OpenWeatherMapのドキュメント見てね！)
@@ -110,9 +121,7 @@ class WeatherNotify(commands.Cog):
                     "13d": "❄️", "13n": "❄️", # 雪
                     "50d": "🌫️", "50n": "🌫️", # 霧
                 }
-                    emoji = emoji_map.get(icon, "❔") # マップになければ「？」
-                    forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}") # 絵文字と説明を表示
-                    
+    
                 # --- 最終的なメッセージを組み立て ---
                 current_temp_str = f"{current_temp:.1f}°C" if isinstance(current_temp, (int, float)) else "N/A"
                 current_humidity_str = f"{current_humidity}%" if isinstance(current_humidity, (int, float)) else "N/A"
@@ -121,6 +130,9 @@ class WeatherNotify(commands.Cog):
 
                 # メッセージを作成
                 forecast_text = "\n".join(forecast_parts)
+                if not forecast_text: # もし表示範囲の予報が取れなかった場合
+                    forecast_text = "(指定範囲の予報データなし)"
+                    
                 message = (
                     f"おはよう、ドクター。\n"
                     f"東京の今日の天候を表示する。\n"
