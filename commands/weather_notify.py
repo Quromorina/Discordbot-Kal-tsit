@@ -78,7 +78,8 @@ class WeatherNotify(commands.Cog):
 
                 # メッセージを作成
                 message = (
-                    f"おはよう、ドクター {self.city} の現在の天候 ({time_str}) だ。\n"
+                    f"おはよう、ドクター。\n"
+                    f"{self.city} の現在の天候を通知する。\n"
                     f"天気: {description}\n"
                     f"気温: {temp:.1f}°C (最高: {temp_max:.1f}°C / 最低: {temp_min:.1f}°C)\n"
                     f"湿度: {humidity}%\n"
