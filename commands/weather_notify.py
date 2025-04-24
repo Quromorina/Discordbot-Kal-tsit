@@ -102,7 +102,8 @@ class WeatherNotify(commands.Cog):
                     elif "雷" in desc: emoji = "⚡"
 
                     forecast_parts.append(f"{time_str}: {emoji}{desc} {temp_str}")
-
+                    
+                forecast_text = "\n".join(forecast_parts)
                 # メッセージを作成
                 message = (
                     f"おはよう、ドクター。\n"
@@ -111,9 +112,9 @@ class WeatherNotify(commands.Cog):
                     f"気温: {temp:.1f}°C (最高: {temp_max:.1f}°C / 最低: {temp_min:.1f}°C)\n"
                     f"湿度: {humidity}%\n"
                     f"風速: {wind_speed:.1f} m/s\n"
-                    f"--- 3時間ごと予報 ---\n" +
-                    "\n".join(forecast_parts) + # 各予報を改行で繋げる
-                )        
+                    f"--- 3時間ごと予報 ---\n"
+                    f"{forecast_text}\n"
+                )
                 return message
             else:
                 return f"都市「{self.city}」が見つかりませんでした。"
