@@ -28,7 +28,7 @@ async def load_extensions():
         'commands.dice',      # ダイスロール
         'commands.configure', # 参加通知設定コマンド
         'commands.gemini_chat', # Gemini AI
-        'commands.system_info' # ラズパイステータス
+        'commands.system_info', # ラズパイステータス
         'commands.weather_notify' #天気
     ]
     for extension in cog_files:
