@@ -204,7 +204,7 @@ class WeatherNotify(commands.Cog):
             # advice_text はデフォルトのエラーメッセージのまま
 
         # --- 5. 結果をDMで送信 (変更なし) ---
-        final_dm_message = f"以下に示すのは天候予測に基づく私の見解だ。\n---\n{advice_text}"
+        final_dm_message = f"\n以下に示すのは天候予測に基づく私の見解だ。\n---\n{advice_text}"
         try:
             # ... (メッセージ送信処理) ...
             await target_user.send(final_dm_message)
