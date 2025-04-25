@@ -153,7 +153,7 @@ class ArknightsCommands(commands.Cog):
             if conn:
                 conn.close()
 
-    # ★★★ Cogをロードするための setup 関数 ★★★
-    # main.py の load_extensions で 'commands.arknights_commands' を追加すること！
-    async def setup(bot: commands.Bot):
-        await bot.add_cog(ArknightsCommands(bot))
+# ★★★ Cogをロードするための setup 関数 ★★★
+# main.py の load_extensions で 'commands.arknights_commands' を追加すること！
+async def setup(bot: commands.Bot):
+    await bot.add_cog(ArknightsCommands(bot))
