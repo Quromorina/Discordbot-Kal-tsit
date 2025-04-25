@@ -57,21 +57,22 @@ class ArknightsCommands(commands.Cog):
             op_class = operator['operator_class']
             archetype = operator['archetype']
             affiliation = operator['affiliation']
+            team = operator['team']
             race = operator['race']
             birthplace = operator['birthplace']
 
             # Ability Stats はそのまま取り出し
             # (None の可能性があるので .get() で安全にアクセス)
-            physical_strength = operator.get('physical_strength')
-            combat_skill = operator.get('combat_skill')
-            mobility = operator.get('mobility')
-            endurance = operator.get('endurance')
-            tactical_acumen = operator.get('tactical_acumen')
-            arts_adaptability = operator.get('arts_adaptability')
+            physical_strength = operator['physical_strength']
+            combat_skill = operator['combat_skill']
+            mobility = operator['mobility']
+            endurance = operator['endurance']
+            tactical_acumen = operator['tactical_acumen']
+            arts_adaptability = operator['arts_adaptability']
 
             # Profile Summary と Lore Notes (結合されたテキスト) を取得
-            full_profile_text = operator.get('profile_summary', '')
-            full_lore_text = operator.get('lore_notes', '')
+            full_profile_text = operator['profile_summary']
+            full_lore_text = operator['lore_notes']
 
             # ★★★ 必要なセクションだけを抽出するロジック ★★★
             # DBに保存したテキストを、もう一度 "--- タイトル ---" で分割し直す
@@ -101,9 +102,11 @@ class ArknightsCommands(commands.Cog):
                         extracted_text += f"--- {title} ---\n{text}\n\n"
 
             # 抽出したテキストが空だったら、 fallback として profile_summary 全体を表示する
-            if not extracted_text and operator.get('profile_summary'):
-                 extracted_text = operator['profile_summary']
-                 # タイトルがないので見出しは付けない
+            if not extracted_text: # 何も抽出できなかった場合
+                fallback_profile = operator['profile_summary'] # DBから取得
+                if fallback_profile: # fallback_profile が None や空文字列でないかチェック
+                    extracted_text = fallback_profile # fallback として profile_summary 全体を入れる
+                    # タイトルがないので見出しは付けない
 
             # --- ▼▼▼ Embed 作成 ▼▼▼ ---
             # 基本情報
@@ -117,12 +120,12 @@ class ArknightsCommands(commands.Cog):
             stats_list = []
             # (各変数に値が入っているかチェックしてリストに追加)
             # None や 'N/A' みたいな文字列は除外したい
-            if physical_strength and physical_strength != 'N/A': stats_list.append(f"物理強度:{physical_strength}")
-            if combat_skill and combat_skill != 'N/A': stats_list.append(f"戦場機動:{combat_skill}")
-            if mobility and mobility != 'N/A': stats_list.append(f"生理的耐性:{mobility}")
-            if endurance and endurance != 'N/A': stats_list.append(f"戦術立案:{endurance}") # ★カラム名間違い注意！
-            if tactical_acumen and tactical_acumen != 'N/A': stats_list.append(f"戦闘技術:{tactical_acumen}")
-            if arts_adaptability and arts_adaptability != 'N/A': stats_list.append(f"アーツ適性:{arts_adaptability}")
+            if physical_strength is not None and physical_strength != 'N/A': stats_list.append(f"物理強度:{physical_strength}")
+            if combat_skill is not None and combat_skill != 'N/A': stats_list.append(f"戦場機動:{combat_skill}")
+            if mobility is not None and mobility != 'N/A': stats_list.append(f"生理的耐性:{mobility}")
+            if endurance is not None and endurance != 'N/A': stats_list.append(f"戦術立案:{endurance}") # ★カラム名間違い注意！
+            if tactical_acumen is not None and tactical_acumen != 'N/A': stats_list.append(f"戦闘技術:{tactical_acumen}")
+            if arts_adaptability is not None and arts_adaptability != 'N/A': stats_list.append(f"アーツ適性:{arts_adaptability}")
 
             # ★注意: populate_db.py の ability stat カラム名と、ここで使う変数名が一致してるか確認！
             # 例: DBカラム名 tactical_acumen -> 変数 tactical_acumen
