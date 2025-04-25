@@ -152,7 +152,7 @@ class ArknightsCommands(commands.Cog):
                 # ★★★ 必要なセクションだけを抽出するロジック ★★★
                 # DBに保存したテキストを、もう一度 "--- タイトル ---" で分割し直す
                 # 表示したいセクションのタイトルリスト (能力測定は除外)
-                sections_to_include_in_text = ["基礎情報", "個人履歴", "健康診断", "第一資料", "第二資料", "第三資料", "第四資料", "昇進記録"] # ★必要な資料のタイトルリスト
+                sections_to_include_in_text = ["基礎情報", "個人履歴", "健康診断", "第一資料"] # ★必要な資料のタイトルリスト
 
                 extracted_text = "" # 表示用に抽出・整形したテキストを入れる変数
 
@@ -226,7 +226,6 @@ class ArknightsCommands(commands.Cog):
 
                 # スキル情報、素質情報も Embed フィールドとして追加するならここ！
                 # populate_db.py で保存した sX_name, sX_desc, tX_name, tX_desc を利用
-                # 例:
                 if operator['skill1_name']:
                     embed.add_field(name=f"S1: {operator['skill1_name']}", value=operator['skill1_desc'] if operator['skill1_desc'] else "説明なし", inline=False)
                 if operator['skill2_name']:
