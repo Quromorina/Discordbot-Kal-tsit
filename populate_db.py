@@ -14,86 +14,44 @@ print(f"データベースファイルのパス: {db_path}")
 
 # --- ★★★ クラスID -> 日本語名 変換マップ (手動で作成！) ★★★ ---
 class_jp_map = {
-    "PIONEER": "先鋒",
-    "WARRIOR": "前衛",
-    "SNIPER": "狙撃",
-    "CASTER": "術師",
-    "SUPPORT": "補助",
-    "MEDIC": "医療",
-    "TANK": "重装",
-    "SPECIAL": "特殊",
+    "PIONEER": "先鋒", "WARRIOR": "前衛", "SNIPER": "狙撃", "CASTER": "術師",
+    "SUPPORT": "補助", "MEDIC": "医療", "TANK": "重装", "SPECIAL": "特殊",
     # ★★★ JSONで使われているIDと日本語名を正確に！ 大文字/小文字も注意！ ★★★
 }
 print(f"読み込んだクラス日本語マップ: {len(class_jp_map)} 件")
 
 # --- ★★★ 職分ID -> 日本語名 変換マップ  ★★★ ---
 archetype_jp_map = {
-    "agent": "偵察兵",
-    "alchemist": "錬金士",
-    "aoesniper" : "榴弾射手",
-    "artsfghter" : "術戦士",
-    "artsprotector": "術技衛士 ",
-    "bard": "吟遊者",
-    "bearer": "旗手",
-    "blastcaster": "爆撃術師",
-    "blessing": "祈祷師",
-    "bombarder": "投擲手",
-    "centurion": "強襲者",
-    "chain": "連鎖術師",
-    "chainhealer": "連鎖癒師",
-    "charger": "突撃兵",
-    "closerange": "精密射手",
-    "corecaster": "中堅術師",
-    "craftsman": "工匠",
-    "crusher": "重剣士",
-    "dollkeeper": "傀儡師",
-    "duelist": "決闘者",
-    "executor": "執行者",
-    "fastshot": "速射手",
-    "fearless": "勇士",
-    "fighter": "闘士",
-    "fortress": "堅城砲手",
-    "funnel": "操機術師",
-    "geek": "鬼才",
-    "guardian": "庇護衛士",
-    "hammer": "槌撃士",
-    "healer": "療養師",
-    "hookmaster": "鉤縄師",
-    "hunter": "狩人",
-    "incantationmedic": "呪癒師",
-    "instructor": "教官",
-    "librator": "解放者",
-    "longrange": "戦術射手",
-    "loopshooter": "旋輪射手",
-    "lord": "領主",
-    "merchant": "行商人",
-    "musha": "武者",
-    "mystic": "秘術師",
-    "phalanx": "法陣術師",
-    "physician": "医師",
-    "pioneer": "先駆兵",
-    "primcaster": "本源術師",
-    "protector": "重盾衛士",
-    "pusher": "推撃手",
-    "reaper": "鎌撃士",
-    "reaperrange": "散弾射手",
-    "ringhealer": "群癒師",
-    "ritualist": "祭儀師",
-    "shotprotector": "哨戒衛士",
-    "siegesniper": "破城射手",
-    "slower": "緩速師",
-    "splashcaster": "拡散術師",
-    "stalker": "潜伏者",
-    "summoner": "召喚師",
-    "sword": "剣豪",
-    "tactician": "戦術家",
-    "traper": "罠師",
-    "underminer": "呪詛師",
-    "unyield": "破壊者",
-    "wandermedic": "放浪医"
+    "agent": "偵察兵", "alchemist": "錬金士", "aoesniper" : "榴弾射手", "artsfghter" : "術戦士",
+    "artsprotector": "術技衛士", "bard": "吟遊者", "bearer": "旗手", "blastcaster": "爆撃術師",
+    "blessing": "祈祷師", "bombarder": "投擲手", "centurion": "強襲者", "chain": "連鎖術師",
+    "chainhealer": "連鎖癒師", "charger": "突撃兵", "closerange": "精密射手", "corecaster": "中堅術師",
+    "craftsman": "工匠", "crusher": "重剣士", "dollkeeper": "傀儡師", "duelist": "決闘者",
+    "executor": "執行者", "fastshot": "速射手", "fearless": "勇士", "fighter": "闘士",
+    "fortress": "堅城砲手", "funnel": "操機術師", "geek": "鬼才", "guardian": "庇護衛士",
+    "hammer": "槌撃士", "healer": "療養師", "hookmaster": "鉤縄師", "hunter": "狩人",
+    "incantationmedic": "呪癒師", "instructor": "教官", "librator": "解放者", "longrange": "戦術射手",
+    "loopshooter": "旋輪射手", "lord": "領主", "merchant": "行商人", "musha": "武者",
+    "mystic": "秘術師", "phalanx": "法陣術師", "physician": "医師", "pioneer": "先駆兵",
+    "primcaster": "本源術師", "protector": "重盾衛士", "pusher": "推撃手", "reaper": "鎌撃士",
+    "reaperrange": "散弾射手", "ringhealer": "群癒師", "ritualist": "祭儀師", "shotprotector": "哨戒衛士",
+    "siegesniper": "破城射手", "slower": "緩速師", "splashcaster": "拡散術師", "stalker": "潜伏者",
+    "summoner": "召喚師", "sword": "剣豪", "tactician": "戦術家", "traper": "罠師",
+    "underminer": "呪詛師", "unyield": "破壊者", "wandermedic": "放浪医",
     # ★★★ 他にもあれば追加！キー名(英語ID)と日本語名を正確に！ ★★★
 }
 print(f"読み込んだ職分日本語マップ: {len(archetype_jp_map)} 件")
+
+# --- レアリティ変換用辞書 ---
+# "TIER_6" -> 6 のように変換するため
+rarity_map = {
+    "TIER_1": 1,
+    "TIER_2": 2,
+    "TIER_3": 3,
+    "TIER_4": 4,
+    "TIER_5": 5,
+    "TIER_6": 6,
+}
 
 # blackboard_list を引数で受け取るように変更！
 def replace_skill_value(match, blackboard_list):
@@ -180,18 +138,56 @@ except json.JSONDecodeError as e:
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-# --- レアリティ変換用辞書 ---
-# "TIER_6" -> 6 のように変換するため
-rarity_map = {
-    "TIER_1": 1,
-    "TIER_2": 2,
-    "TIER_3": 3,
-    "TIER_4": 4,
-    "TIER_5": 5,
-    "TIER_6": 6,
-}
+# --- ★★★ 新しい organizations テーブルにデータを挿入 ★★★ ---
+print(f"--- organizations テーブルにデータを挿入中 ---")
+org_insert_count = 0
+ORGANIZATIONS_TABLE = 'organizations' # テーブル名 (create_db.py と合わせる)
 
-# ---  データ処理と挿入 (★★★アルケットの例に合わせて修正★★★) ---
+# team_data (handbook_team_table.jsonの中身) をループして organizations テーブルに挿入
+if team_data: # team_data が読み込めていれば処理
+    try:
+        for org_id, org_info in team_data.items():
+            # ★ handbook_team_table.json の構造に合わせてキー名を確認・修正！ ★
+            # id, name, color, order_num は handbook_team_table にあるはず
+            id = org_info.get('powerId')      # 'ursus' とか 'rhodes' とか
+            name = org_info.get('powerName')    # 'ウルサス' とか 'ロドス・アイランド' とか
+            color = org_info.get('color')       # 色コード
+            order_num = org_info.get('orderNum') # 並び順
+
+            # ★★★ description, lore, type は handbook_team_table.json だけでは分からない！ ★★★
+            # 後で add_org_details.py などで手動または別のデータソースから補完する前提。
+            # ここでは一旦 None を入れる。
+            type = None       # 組織のタイプ ('Nation', 'Faction', 'Team' など)
+            description = None # 簡単な説明
+            lore = None        # 詳細な設定や歴史
+
+            # ID と Name は必須なので、もし取れなかったらスキップ
+            if not id or not name:
+                 print(f"  Warning: Skipping organization with missing ID or name: ID='{id}', Name='{name}'")
+                 continue
+
+            # ★★★ データベースに挿入 ★★★
+            # organizations テーブルのCREATE TABLE 文とカラム名を合わせる！ (7個のカラム)
+            sql = f"""
+                INSERT OR REPLACE INTO {ORGANIZATIONS_TABLE}
+                (id, name, type, description, lore, color, order_num)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """
+            # タプルに値を順番に詰める (None もそのまま渡す)
+            cursor.execute(sql, (id, name, type, description, lore, color, order_num))
+            org_insert_count += 1
+
+        # organizations テーブルへの変更をコミット (operators と一緒に最後にまとめてもOK)
+        # conn.commit()
+        print(f"organizations テーブルに {org_insert_count} 件挿入/置換しました。")
+
+    except Exception as e:
+        print(f"--- エラー発生 --- organizations テーブル挿入中 ---")
+        print(f"エラー内容: {e}")
+        print("------------------------------------------------")
+
+
+# --- ⑤ データ処理と挿入 (オペレーターのループ) ---
 insert_count = 0
 for char_id, op_data in character_data.items():
     # トークンや召喚物などをスキップする条件を入れる (例: 'char_xxx' 形式じゃないIDは飛ばす)
@@ -231,8 +227,7 @@ for char_id, op_data in character_data.items():
         birthplace_name = team_data.get(nation_id, {}).get('powerName') if nation_id else None
 
         team_name = None # 初期値は None
-        if team_id and team_id in team_data: # teamId があって team_data に対応があれば
-            team_name = team_data[team_id].get('powerName') # '行動予備隊A4' などを取得
+        team_name = team_data.get(team_id, {}).get('powerName') if team_id else None
 
         # === handbook_info_table.json から取得 ===
         op_handbook = handbook_data.get('handbookDict', {}).get(char_id)
@@ -410,7 +405,7 @@ for char_id, op_data in character_data.items():
                     t2_desc = final_talent_desc.strip()
 
         # === ⑥ データベースに挿入 ===
-        # SQL文: operatorsテーブルの全カラム名を指定し、VALUES に ? をカラム数分書く！ (25個！)
+        # SQL文: operatorsテーブルの全カラム名を指定し、VALUES に ? をカラム数分書く！ (26個！)
         sql = """
             INSERT OR REPLACE INTO operators (
                 name, rarity, operator_class, archetype, affiliation, team, race, birthplace,

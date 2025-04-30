@@ -37,6 +37,25 @@ CREATE TABLE IF NOT EXISTS {OPERATORS_TABLE} (
     talent2_name TEXT, talent2_desc TEXT
 )
 """
+
+# ★★★ 新しい organizations テーブルを作成！ ★★★
+ORGANIZATIONS_TABLE = 'organizations'
+
+create_organizations_table_sql = f"""
+CREATE TABLE IF NOT EXISTS {ORGANIZATIONS_TABLE} (
+    id TEXT PRIMARY KEY,     -- 'ursus', 'rhodes', 'penguin' みたいなID
+    name TEXT UNIQUE,        -- 'ウルサス', 'ロドス・アイランド', 'ペンギン急便' みたいな日本語名
+    type TEXT,               -- 'Nation' (国), 'Faction' (勢力), 'Team' (チーム) みたいな分類
+    description TEXT,        -- 組織の簡単な説明 (もしあれば)
+    lore TEXT                -- 組織に関する詳細な設定や歴史 (もしあれば)
+)
+"""
+try:
+    cursor.execute(create_organizations_table_sql) # ★新しいテーブルの作成を実行！
+    print(f"テーブル '{ORGANIZATIONS_TABLE}' を確認/作成しました。")
+except sqlite3.Error as e:
+    print(f"テーブル '{ORGANIZATIONS_TABLE}' 作成中にエラーが発生しました: {e}")
+
 try:
     cursor.execute(create_table_sql)
     print(f"テーブル '{OPERATORS_TABLE}' を確認/作成しました。")
