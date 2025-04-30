@@ -10,6 +10,10 @@ import sqlite3
 # データベース (my_bot 直下) へのパスは '..' で一つ上に戻る
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'arknights_data.db')
 
+# --- DBテーブル名 (typo防止用) ---
+OPERATORS_TABLE = "operators"
+ORGANIZATIONS_TABLE = "organizations" # 追加
+
 # --- ここから Cog クラス ---
 class GeminiChat(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -82,8 +86,9 @@ class GeminiChat(commands.Cog):
     *   「おはよう」「こんにちわ」「こんばんは」等の挨拶もあまり返しません。すぐに本題に対して返答するようにしてください。
 
 *   ★★背景知識の補足★★
-*   **重要事項:** 「ロドス・アイランド」は、移動都市を拠点とする製薬会社であり、テラ世界の組織の名称である。
-　　現実世界に存在するギリシャの「ロドス島」とは一切関係ない。応答の際は、絶対に「ロドス島」という地理的な名称と混同せず、常に組織名として「ロドス・アイランド」または文脈に応じて「ロドス」と正確に呼称すること。
+*   **重要事項:** 
+        「ロドス・アイランド」は、移動都市を拠点とする製薬会社であり、テラ世界の組織の名称である。
+        現実世界に存在するギリシャの「ロドス島」とは一切関係ない。応答の際は、絶対に「ロドス島」という地理的な名称と混同せず、常に組織名として「ロドス・アイランド」または文脈に応じて「ロドス」と正確に呼称すること。
 
 *   **禁止事項:**
     *   軽薄な言葉遣いや、砕けた表現（例：！、ｗ、顔文字など）は絶対に使用しないでください。
@@ -141,6 +146,50 @@ class GeminiChat(commands.Cog):
 
         except sqlite3.Error as e:
             print(f"データベース検索中にエラー (オペレーター: {operator_name}): {e}")
+            return "" # エラー時も空文字
+        finally:
+            if conn:
+                conn.close() # 必ず接続を閉じる
+
+    # ★★★ データベースから組織情報を検索するヘルパー関数 (新規追加) ★★★
+    def _find_organization_data(self, organization_name: str) -> str:
+        """指定された組織名をDBで検索し、整形した情報を文字列で返す"""
+        if not os.path.exists(self.db_path):
+            return "" # DBファイルがなければ空文字を返す
+        
+        conn = None
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row # カラム名でアクセスできるようにする
+            cursor = conn.cursor()
+
+            # 日本語名 (name) または ID (id) で検索を試みる
+            cursor.execute(f"SELECT * FROM {ORGANIZATIONS_TABLE} WHERE name = ?", (organization_name,))
+            organization = cursor.fetchone()
+
+            if not organization:
+                # 日本語名で見つからなければIDで検索を試みる (小文字化して比較)
+                cursor.execute(f"SELECT * FROM {ORGANIZATIONS_TABLE} WHERE LOWER(id) = ?", (organization_name.lower(),))
+                organization = cursor.fetchone()
+
+            if organization:
+                # データベースから取得した情報を分かりやすいテキストに整形
+                info_parts = []
+                info_parts.append(f"組織名: {organization['name']} (ID: {organization['id']}, タイプ: {organization['type']})")
+                if organization['description']:
+                    # description も長ければ切り詰め
+                    info_parts.append(f"\n概要:\n{organization['description'][:500]}...")
+                if organization['lore']:
+                    # lore も長ければ切り詰め
+                    info_parts.append(f"\nLore:\n{organization['lore'][:800]}...")
+                # color や order_num はAIへの情報としては不要と判断
+
+                return "\n".join(info_parts) # 各情報を改行で繋げた文字列を返す
+            else:
+                return "" # 見つからなければ空文字
+            
+        except sqlite3.Error as e:
+            print(f"データベース検索中にエラー (組織: {organization_name}): {e}")
             return "" # エラー時も空文字
         finally:
             if conn:
@@ -234,44 +283,76 @@ class GeminiChat(commands.Cog):
         if not self.model:
             print("おしゃべり機能が無効のためスキップします。")
             return
-            
-        # メンション除去
+        
+        # ボットへのメンション部分をメッセージから除去
+        # '<@ボットID>' または '<@!ボットID>' の形式を除去
         pattern = f"<@!?{self.bot.user.id}>"
         user_text = re.sub(pattern, "", message.content).strip()
-        
-        if is_mentioned:
-            # APIキーまたはモデルが設定されていない場合は何もしない
-            if not self.model:
-                # 必要ならユーザーに通知しても良い
-                # await message.channel.send("すまない、会話機能の設定ができてないようだ。")
-                print("おしゃべり機能が有効になっていないため、メンションへの応答をスキップします。")
-                return
-
-            # ボットへのメンション部分をメッセージから除去 (より確実に)
-            # '<@ボットID>' または '<@!ボットID>' の形式を除去
-            pattern = f"<@!?{self.bot.user.id}>"
-            user_text = re.sub(pattern, "", message.content).strip()
 
         if user_text:
-             # --- ▼▼▼ DB検索処理を追加 ▼▼▼ ---
-            found_op_name = None
+            # --- ▼▼▼ DB検索処理をオペレーターと組織両方に対応 ▼▼▼ ---
             db_context_data = ""
 
-             # 超シンプルなオペレーター名検出ロジック (改善の余地あり！)
-             # メッセージに含まれる単語とDBのオペレーター名を比較？
-             # または、特定のキーワード「について教えて」の前にある単語を取る？
-             # まずは簡単なテストとして、「〇〇について教えて」の形式を仮定
-            match = re.search(r'(.+?)(について|のこと|の詳細|の情報)', user_text)
+            # シンプルなオペレーター名/組織名検出ロジック (改善の余地あり！)
+            # 「〇〇について教えて」「〇〇のこと」「〇〇の詳細」「〇〇の情報」のような形式を仮定
+            # または、メッセージ中の単語をそのまま候補とする
+            
+            # メッセージ全体を検索対象の名前候補とする
+            potential_names = [user_text]
+            # さらに、メッセージを単語分割して候補とする (スペース、句読点などで分割)
+            # 今回はシンプルにスペースで分割してみる
+            # potential_names.extend(re.split(r'\s+|について|のこと|の詳細|の情報', user_text))
+            
+            # より具体的な「〇〇について」のような形式から名前を抽出するロジック
+            match = re.search(r'(.+?)(について|のこと|の詳細|の情報|ってわかる|って何|とは？)', user_text)
             if match:
-                potential_name = match.group(1).strip()
-                print(f"Detected potential operator name: {potential_name}")
-                # データベース検索を実行！
-                db_context_data = self._find_operator_data(potential_name)
-                if db_context_data:
-                    print(f"データベースから {potential_name} の情報を見つけました。")
-                    found_op_name = potential_name # 見つかったことを記録 (任意)
+                potential_names.insert(0, match.group(1).strip()) # 抽出した名前を最優先候補とする
 
-        # --- ▲▲▲ DB検索処理を追加 ▲▲▲ ---
+            # 重複を排除し、空文字列を除去
+            potential_names = list(dict.fromkeys([name for name in potential_names if name]))
+
+            print(f"Potential names detected for DB search: {potential_names}")
+
+            found_op_info = ""
+            found_org_info = ""
+
+            # 候補名を順に試してDB検索
+            for p_name in potential_names:
+                 # オペレーター情報を検索
+                 op_info = self._find_operator_data(p_name)
+                 if op_info:
+                    found_op_info = op_info
+                    print(f"Found operator info for: {p_name}")
+                    # 一つ見つかれば十分とするか、複数対応するかは設計次第
+                    # 今回は、一致するものが最初に見つかったらそれを使う（シンプル）
+                    break # オペレーターが見つかったら次の候補はオペレーター検索しない
+
+            # 見つからなかった場合、またはオペレーター検索とは別に組織も検索
+            # （ここではオペレーターが見つかっても組織は別に検索する設計にする）
+            for p_name in potential_names:
+                 # 組織情報を検索
+                 org_info = self._find_organization_data(p_name)
+                 if org_info:
+                    found_org_info = org_info
+                    print(f"Found organization info for: {p_name}")
+                    # 組織も見つかったら次の候補は組織検索しない
+                    break
+
+            # 見つかった情報を結合してGeminiに渡すデータを作成
+            if found_op_info:
+                db_context_data += f"--- オペレーター情報 ---\n{found_op_info}\n"
+            
+            if found_org_info:
+                 # オペレーター情報がある場合は間に改行を入れる
+                if db_context_data:
+                    db_context_data += "\n"
+                db_context_data += f"--- 組織情報 ---\n{found_org_info}\n"
+
+            if not db_context_data:
+                print(f"No relevant DB info found for detected names.")
+
+            # --- ▲▲▲ DB検索処理ここまで ▲▲▲ ---
+
             async with message.channel.typing():
                 # generate_reply に db_context_data を渡す！
                 reply_text = await self.generate_reply(user_text, db_context_data)
@@ -281,9 +362,12 @@ class GeminiChat(commands.Cog):
                     try:
                         # 2000文字を超える場合は分割 (簡易的な対処)
                         if len(reply_text) > 1990:
-                             await message.reply(reply_text[:1990] + "...") # 長いので省略
+                            # 返信を複数メッセージに分割
+                            chunks = [reply_text[i:i+1990] for i in range(0, len(reply_text), 1990)]
+                            for chunk in chunks:
+                                await message.reply(chunk) # 分割して送信
                         else:
-                             await message.reply(reply_text)
+                            await message.reply(reply_text)
                     except discord.Forbidden:
                         print(f"エラー: チャンネル {message.channel.name} に返信する権限がありません。")
                     except Exception as e:
