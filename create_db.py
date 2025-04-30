@@ -47,8 +47,10 @@ CREATE TABLE IF NOT EXISTS {ORGANIZATIONS_TABLE} (
     name TEXT UNIQUE,        -- 'ウルサス', 'ロドス・アイランド', 'ペンギン急便' みたいな日本語名
     type TEXT,               -- 'Nation' (国), 'Faction' (勢力), 'Team' (チーム) みたいな分類
     description TEXT,        -- 組織の簡単な説明 (もしあれば)
-    lore TEXT                -- 組織に関する詳細な設定や歴史 (もしあれば)
-)
+    lore TEXT,               -- 組織に関する詳細な設定や歴史 (もしあれば)
+    color TEXT,
+    order_num INTEGER
+);
 """
 try:
     cursor.execute(create_organizations_table_sql) # ★新しいテーブルの作成を実行！
