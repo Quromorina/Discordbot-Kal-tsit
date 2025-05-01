@@ -8,44 +8,88 @@ import pytz # タイムゾーン処理用
 # .env から設定を読み込み
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 TARGET_USER_ID_STR = os.getenv("WEATHER_USER_ID")
+FRIEND_TARGET_ID_STR   = os.getenv("WEATHER_FRIEND_ID") # 追加：もう一人の送信先 (ユーザーID or チャンネルID)
 TARGET_CITY = os.getenv("WEATHER_CITY_NAME", "Tokyo,JP") # デフォルトは東京
 NOTIFY_TIME_STR = os.getenv("WEATHER_NOTIFY_TIME", "06:00") # デフォルトは7:00
 
 # 文字列から数値に変換
 TARGET_USER_ID = int(TARGET_USER_ID_STR) if TARGET_USER_ID_STR else None
+FRIEND_TARGET_ID     = int(FRIEND_TARGET_ID_STR) if FRIEND_TARGET_ID_STR else None
 notify_hour, notify_minute = map(int, NOTIFY_TIME_STR.split(':'))
+
 jst = pytz.timezone('Asia/Tokyo')
-
-# ↓↓↓ JST時刻をUTC時刻に正しく変換する処理 ↓↓↓
-try:
-    now_jst = datetime.now(jst)
-    target_dt_jst = now_jst.replace(hour=notify_hour, minute=notify_minute, second=0, microsecond=0)
-    target_dt_utc = target_dt_jst.astimezone(pytz.utc)
-    NOTIFY_TIME_UTC = target_dt_utc.time()
-    print(f"Weather Notify Time (UTC): {NOTIFY_TIME_UTC.strftime('%H:%M')}")
-except Exception as e:
-    # もし時刻変換でエラーが起きたら、とりあえずUTCの0時を使う (フォールバック)
-    print(f"🚨 通知時刻の計算中にエラー: {e}. UTC 00:00 を使用します。")
-    NOTIFY_TIME_UTC = time(hour=0, minute=0, tzinfo=pytz.utc)
-
+hour, minute = map(int, NOTIFY_TIME_STR.split(":"))
+now_jst      = datetime.now(jst)
+dt_jst       = now_jst.replace(hour=hour, minute=minute, second=0, microsecond=0)
+NOTIFY_TIME_UTC = dt_jst.astimezone(pytz.utc).time()
 
 class WeatherNotify(commands.Cog):
     def __init__(self, bot: commands.Bot):
-        self.bot = bot
-        self.api_key = OPENWEATHER_API_KEY
+        self.bot            = bot
+        self.api_key        = OPENWEATHER_API_KEY
+        self.city           = TARGET_CITY
         self.target_user_id = TARGET_USER_ID
-        self.city = TARGET_CITY
+        self.friend_id      = FRIEND_TARGET_ID
 
-        # APIキーやユーザーIDがない場合はタスクを開始しない
-        if not self.api_key:
-            print("🚨 OpenWeatherMap APIキーが設定されていません。天気通知は無効です。")
-        elif not self.target_user_id:
-            print("🚨 通知先のユーザーID (WEATHER_USER_ID) が設定されていません。天気通知は無効です。")
+        if not self.api_key or not self.target_user_id:
+            print("🚨 必須設定が不足しています。天気通知は無効です。")
         else:
-            self.daily_weather_check.start() # タスクループを開始！
+            self.daily_weather_check.start()
 
-    def cog_unload(self):
-        self.daily_weather_check.cancel() # Cogアンロード時にタスクをキャンセル
+    @tasks.loop(time=NOTIFY_TIME_UTC)
+    async def daily_weather_check(self):
+        # 1) 天気メッセージ生成
+        weather_message = await self._get_weather_info()
+
+        # 2) 所感を取得
+        gemini_cog: GeminiChat = self.bot.get_cog('GeminiChat')
+        if gemini_cog and gemini_cog.model:
+            instruction = (
+                "上記の天気予報データに基づき、今日の活動で注意すべき点、"
+                "及び推奨される服装について、君の見解を述べたまえ。"
+            )
+            try:
+                commentary = await gemini_cog.generate_commentary(
+                    context=weather_message,
+                    instruction=instruction
+                )
+            except Exception as e:
+                print(f"❌ Commentary生成中にエラー: {e}")
+                commentary = "所感の生成に失敗しました。"
+        else:
+            commentary = ""
+
+        # 3) full_message を組み立て
+        if commentary:
+            full_message = (
+                f"{weather_message}\n"
+                "以下に示すのは天候予測に基づく私の見解だ。\n"
+                f"---\n{commentary}"
+            )
+        else:
+            full_message = weather_message
+
+        # 4) 送信先リストを作成
+        send_funcs = []
+        user = self.bot.get_user(self.target_user_id)
+        if user:
+            send_funcs.append(user.send)
+        obj = self.bot.get_user(self.friend_id) or self.bot.get_channel(self.friend_id)
+        if obj and hasattr(obj, "send"):
+            send_funcs.append(obj.send)
+
+        # 5) 一斉送信（full_messageを送る！）
+        for send in send_funcs:
+            try:
+                await send(full_message)
+            except discord.Forbidden:
+                print(f"⛔️ 送信権限がありません: {send}")
+            except Exception as e:
+                print(f"❌ 送信中エラー ({send}): {e}")
+
+    @daily_weather_check.before_loop
+    async def before_loop(self):
+        await self.bot.wait_until_ready()
 
     async def _get_weather_info(self) -> str:
         """OpenWeatherMap API(/forecast)から天気と3時間予報を取得して整形する"""
@@ -152,72 +196,6 @@ class WeatherNotify(commands.Cog):
             print(f"天気情報(/forecast)取得中に予期せぬエラー: {e}")
             return "天気情報の取得中に不明なエラーが発生しました。"
 
-    # ★★★ tasks.loop で毎日指定時刻に実行！ ★★★
-    @tasks.loop(time=NOTIFY_TIME_UTC) # UTCで指定された時刻に実行
-    async def daily_weather_check(self):
-        print(f"[{datetime.now(jst).strftime('%Y-%m-%d %H:%M:%S')}] Running daily weather check...")
-        target_user = self.bot.get_user(self.target_user_id)
-
-        if target_user:
-            weather_message = await self._get_weather_info()
-            try:
-                await target_user.send(weather_message)
-                print(f"ユーザーID {self.target_user_id} に天気情報をDMで送信しました。")
-            except discord.Forbidden:
-                print(f"エラー: ユーザーID {self.target_user_id} にDMを送信する権限がありません。(ブロックされてる？)")
-            except Exception as e:
-                print(f"DM送信中に予期せぬエラー: {e}")
-        else:
-            print(f"エラー: 通知先のユーザーID {self.target_user_id} が見つかりませんでした。")
-
-        # --- 1. 天気予報を取得 ---
-        weather_message = await self._get_weather_info()
-        if "エラー" in weather_message or "取得できませんでした" in weather_message or "見つかりませんでした" in weather_message:
-             print(f"天気予報取得失敗のためスキップ: {weather_message}")
-             # (エラーメッセージ送信処理は省略)
-             return
-        
-        # --- 2. GeminiChat Cog を取得 ---
-        gemini_cog: GeminiChat = self.bot.get_cog('GeminiChat') # 型ヒントを追加(任意)
-        if not gemini_cog or not gemini_cog.model: # GeminiCogがないか、モデルが初期化されてない場合
-            print("🚨 GeminiChat Cog またはモデルが見つからないため、天気解説はスキップします。")
-            # 天気予報だけ送る
-            try:
-                 await target_user.send(weather_message)
-                 print(f"ユーザーID {self.target_user_id} に天気予報のみDM送信しました。")
-            except Exception as e:
-                 print(f"天気予報のみDM送信中にエラー: {e}")
-            return
-        
-        # --- 3. Gemini に渡す指示を作成 ---
-        instruction = "上記の天気予報データに基づき、今日の活動で注意すべき点、及び推奨される服装について、君の見解を簡潔に述べたまえ。"
-
-        # --- 4. GeminiChat Cog の新メソッドを呼び出す！ ---
-        print("GeminiChat Cog に天気予報の解説をリクエスト中...")
-        advice_text = "思考モジュールからの応答がなかった。" # デフォルトのエラーメッセージ
-        try:
-            async with target_user.typing():
-                 # ★★★ ここで generate_commentary を呼び出す！ ★★★
-                advice_text = await gemini_cog.generate_commentary(context=weather_message, instruction=instruction)
-        except Exception as e:
-            print(f"❌ Gemini解説生成呼び出し中にエラー: {e}")
-            # advice_text はデフォルトのエラーメッセージのまま
-
-        # --- 5. 結果をDMで送信 (変更なし) ---
-        final_dm_message = f"\n以下に示すのは天候予測に基づく私の見解だ。\n---\n{advice_text}"
-        try:
-            # ... (メッセージ送信処理) ...
-            await target_user.send(final_dm_message)
-            print(f"ユーザーID {self.target_user_id} に天気予報とAI解説をDMで送信しました。")
-        except Exception as e:
-            print(f"最終DM送信中にエラー: {e}")
-
-    # ループ開始前にボットの準備が完了するのを待つ
-    @daily_weather_check.before_loop
-    async def before_daily_check(self):
-        await self.bot.wait_until_ready()
-
 # Cogを読み込むための setup 関数
 async def setup(bot: commands.Bot):
-    # .envファイルから設定を読み込むため、ここでも読み込む必要があるかも？
     await bot.add_cog(WeatherNotify(bot))
