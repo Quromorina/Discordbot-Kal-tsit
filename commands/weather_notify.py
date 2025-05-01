@@ -23,7 +23,6 @@ now_jst      = datetime.now(jst)
 dt_jst       = now_jst.replace(hour=hour, minute=minute, second=0, microsecond=0)
 NOTIFY_TIME_UTC = dt_jst.astimezone(pytz.utc).time()
 
-
 class WeatherNotify(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot            = bot
@@ -42,7 +41,7 @@ class WeatherNotify(commands.Cog):
         # 1) 天気メッセージ生成
         weather_message = await self._get_weather_info()
 
-        # 2) GeminiChat Cog から所感を取得
+        # 2) 所感を取得
         gemini_cog: GeminiChat = self.bot.get_cog('GeminiChat')
         if gemini_cog and gemini_cog.model:
             instruction = (
@@ -58,11 +57,15 @@ class WeatherNotify(commands.Cog):
                 print(f"❌ Commentary生成中にエラー: {e}")
                 commentary = "所感の生成に失敗しました。"
         else:
-            commentary = ""  # モデル未初期化時は所感ナシ
+            commentary = ""
 
-            # 3) 送信するメッセージを組み立て
+        # 3) full_message を組み立て
         if commentary:
-            full_message = f"{weather_message}\n以下に示すのは天候予測に基づく私の見解だ。\n---\n{commentary}"
+            full_message = (
+                f"{weather_message}\n"
+                "以下に示すのは天候予測に基づく私の見解だ。\n"
+                f"---\n{commentary}"
+            )
         else:
             full_message = weather_message
 
@@ -75,7 +78,26 @@ class WeatherNotify(commands.Cog):
         if obj and hasattr(obj, "send"):
             send_funcs.append(obj.send)
 
-        # 3) 一斉送信
+        # 5) 一斉送信（full_messageを送る！）
+        for send in send_funcs:
+            try:
+                await send(full_message)
+            except discord.Forbidden:
+                print(f"⛔️ 送信権限がありません: {send}")
+            except Exception as e:
+                print(f"❌ 送信中エラー ({send}): {e}")
+
+
+        # 4) 送信先リストを作成
+        send_funcs = []
+        user = self.bot.get_user(self.target_user_id)
+        if user:
+            send_funcs.append(user.send)
+        obj = self.bot.get_user(self.friend_id) or self.bot.get_channel(self.friend_id)
+        if obj and hasattr(obj, "send"):
+            send_funcs.append(obj.send)
+
+        # 5) 一斉送信
         for send in send_funcs:
             try:
                 await send(weather_message)
