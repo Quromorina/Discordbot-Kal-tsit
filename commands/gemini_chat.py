@@ -304,7 +304,7 @@ class GeminiChat(commands.Cog):
             # potential_names.extend(re.split(r'\s+|について|のこと|の詳細|の情報', user_text))
             
             # より具体的な「〇〇について」のような形式から名前を抽出するロジック
-            match = re.search(r'(.+?)(について|のこと|の詳細|の情報|ってわかる|って何|とは？)', user_text)
+            match = re.search(r'(.+?)(について|のこと|の詳細|の情報|ってわかる|って知ってる？|は何？|って何|とは？)', user_text)
             if match:
                 potential_names.insert(0, match.group(1).strip()) # 抽出した名前を最優先候補とする
 
