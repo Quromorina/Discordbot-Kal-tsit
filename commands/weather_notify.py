@@ -87,25 +87,6 @@ class WeatherNotify(commands.Cog):
             except Exception as e:
                 print(f"❌ 送信中エラー ({send}): {e}")
 
-
-        # 4) 送信先リストを作成
-        send_funcs = []
-        user = self.bot.get_user(self.target_user_id)
-        if user:
-            send_funcs.append(user.send)
-        obj = self.bot.get_user(self.friend_id) or self.bot.get_channel(self.friend_id)
-        if obj and hasattr(obj, "send"):
-            send_funcs.append(obj.send)
-
-        # 5) 一斉送信
-        for send in send_funcs:
-            try:
-                await send(weather_message)
-            except discord.Forbidden:
-                print(f"⛔️ 送信権限がありません: {send}")
-            except Exception as e:
-                print(f"❌ 送信中エラー ({send}): {e}")
-
     @daily_weather_check.before_loop
     async def before_loop(self):
         await self.bot.wait_until_ready()
