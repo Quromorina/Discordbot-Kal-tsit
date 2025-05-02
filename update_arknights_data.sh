@@ -22,14 +22,10 @@ chown "$GIT_USER":"$GIT_USER" "$LOGFILE" 2>/dev/null
 echo "--- $(date) --- Starting Arknights Data Update Script ---" >> "$LOGFILE" 2>&1
 
 # --- 1. ArknightsGameData リポジトリを更新 ---
-echo "Updating Arknights data repository at $ARK_DATA_REPO..." >> "$LOGFILE" 2>&1
+echo "Updating Arknights data submodule (ark_data)..." >> "$LOGFILE"
 
-# ① origin を本家に向け直す（初回のみ／毎回実行しても問題なし）
-sudo -u "$GIT_USER" git -C "$ARK_DATA_REPO" remote set-url origin https://github.com/Kengxxiao/ArknightsGameData_YoStar.git >> "$LOGFILE" 2>&1
-
-# ② pull 実行：origin → main ブランチ
-sudo -u "$GIT_USER" git -C "$ARK_DATA_REPO" pull origin main >> "$LOGFILE" 2>&1
-# もし master ブランチの場合は上記を master に置き換える
+# ① サブモジュールをリモートから最新取得
+sudo -u "$GIT_USER" git -C "$MYBOT_DIR" submodule update --remote --merge ark_data >> "$LOGFILE" 2>&1
 
 GIT_PULL_STATUS=$?
 if [ $GIT_PULL_STATUS -ne 0 ]; then

@@ -6,7 +6,7 @@ import re
 # --- ① パスの設定 (ここは自分の環境に合わせてね！) ---
 script_dir = os.path.dirname(__file__)
 # 家のラズパイなら...
-data_repo_path = '/home/Quromorina/arknights_yostar_data' # ★★★ clone した場所のフルパス指定が確実！ ★★★
+data_repo_path = os.path.join(script_dir, 'ark_data')
 print(f"データリポジトリのパス: {data_repo_path}")
 
 db_path = os.path.join(script_dir, 'arknights_data.db')
