@@ -1,0 +1,3 @@
+[submodule "ark_data"]
+	path = ark_data
+	url = https://github.com/Kengxxiao/ArknightsGameData_YoStar.git
