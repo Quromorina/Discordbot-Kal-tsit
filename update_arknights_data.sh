@@ -46,7 +46,7 @@ echo "Populate script successful." >> "$LOGFILE" 2>&1
 
 # --- 3. ボットサービスを再起動 ---
 echo "Restarting discord-bot.service..." >> "$LOGFILE" 2>&1
-systemctl restart discord-bot.service >> "$LOGFILE" 2>&1
+sudo systemctl restart discord-bot.service >> "$LOGFILE" 2>&1
 SERVICE_RESTART_STATUS=$?
 if [ $SERVICE_RESTART_STATUS -ne 0 ]; then
     echo "--- $(date) --- Service restart failed (status $SERVICE_RESTART_STATUS). ---" >> "$LOGFILE" 2>&1
