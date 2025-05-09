@@ -1,5 +1,6 @@
 import os
 import discord
+import subprocess
 from discord.ext import commands
 # config.py からトークンを読み込む想定 (config.py が環境変数などから安全に読み込むように実装されていること)
 from config import DISCORD_TOKEN
@@ -49,6 +50,17 @@ async def on_ready():
     print("--- on_ready 開始 ---", flush=True)
     print(f'Logged in as {bot.user.name} ({bot.user.id})', flush=True)
     print('------', flush=True)
+
+    # データベース自動作成
+    db_path = os.path.join(os.path.dirname(__file__), 'arknights_data.db')
+    if not os.path.exists(db_path):
+        print("🚨 データベースが見つからないため作成を試みます...")
+        try:
+            subprocess.run(['python', 'create_db.py'], check=True)
+            subprocess.run(['python', 'populate_db.py'], check=True)
+            print("✅ データベースの自動作成が完了しました。")
+        except Exception as e:
+            print(f"❌ データベース自動作成中にエラー: {e}")
 
     print("--- Cog ロード開始 ---", flush=True)
 
