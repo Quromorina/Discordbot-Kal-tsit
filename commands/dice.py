@@ -9,11 +9,11 @@ class Dice(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="dice", description="指定した回数ダイスを振るよ")
+    @app_commands.command(name="dice", description="指定した回数ダイスを振る")
     @app_commands.describe(times="振る回数", sides="ダイスの面数")
     async def dice(self, interaction: discord.Interaction, times: int, sides: int):
         if times <= 0 or sides <= 0:
-            await interaction.response.send_message("正の数を入力してね！")
+            await interaction.response.send_message("正の数を入力してくれ")
             return
 
         rolls = [random.randint(1, sides) for _ in range(times)]
