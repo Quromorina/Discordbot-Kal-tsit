@@ -11,7 +11,7 @@ class JankenView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.user.id:
-            await interaction.response.send_message("これはあなた専用のじゃんけんだよ！", ephemeral=True)
+            await interaction.response.send_message("じゃんけん、か", ephemeral=True)
             return False
         return True
 
@@ -20,7 +20,7 @@ class JankenView(discord.ui.View):
         hand_emojis = ["✊", "✌", "🖐️"]
         result = (player_hand - bot_hand + 3) % 3
 
-        result_msg = ["あいこで…もう一回！", "なんで負けたのか明日までに考えといてください。", "あなたの勝ち～🎉"][result]
+        result_msg = ["あいこだ…もう一度手を出せ。", "私の勝利だ。", "君の勝ちだ"][result]
 
         # すべてのボタンを無効化
         for item in self.children:
@@ -58,14 +58,14 @@ class JankenView(discord.ui.View):
         if not self.result_sent:
             for item in self.children:
                 item.disabled = True
-            await self.message.edit(content="時間切れ～！またやってね💦", view=self)
+            await self.message.edit(content="時間切れだ。", view=self)
 
 
 class Janken(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="janken", description="じゃんけんで対決！")
+    @app_commands.command(name="janken", description="じゃんけん")
     async def janken(self, interaction: discord.Interaction):
         view = JankenView(user=interaction.user)
         view.message = await interaction.response.send_message("じゃんけん...", view=view)
