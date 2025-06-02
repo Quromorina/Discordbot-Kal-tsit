@@ -45,14 +45,14 @@ fi
 echo "Populate script successful." >> "$LOGFILE" 2>&1
 
 # --- 3. ボットサービスを再起動 ---
-echo "Restarting discord-bot.service..." >> "$LOGFILE" 2>&1
-sudo systemctl restart discord-bot.service >> "$LOGFILE" 2>&1
-SERVICE_RESTART_STATUS=$?
-if [ $SERVICE_RESTART_STATUS -ne 0 ]; then
-    echo "--- $(date) --- Service restart failed (status $SERVICE_RESTART_STATUS). ---" >> "$LOGFILE" 2>&1
+echo "Restarting discord-bot (docker-compose)..." >> "$LOGFILE" 2>&1
+docker-compose -f /home/Quromorina/mybot/Discordbot-Kal-tsit/docker-compose.yml restart >> "$LOGFILE" 2>&1
+RESTART_STATUS=$?
+if [ $RESTART_STATUS -ne 0 ]; then
+    echo "--- $(date) --- docker-compose restart failed (status $RESTART_STATUS). ---" >> "$LOGFILE" 2>&1
     exit 1
 fi
-echo "Service restarted successfully." >> "$LOGFILE" 2>&1
+echo "docker-compose restarted successfully." >> "$LOGFILE" 2>&1
 
 echo "--- $(date) --- Arknights Data Update Completed Successfully. ---" >> "$LOGFILE" 2>&1
 exit 0
