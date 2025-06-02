@@ -24,7 +24,6 @@ async def load_extensions():
     # commands フォルダ内の Cog をロード
     cog_files = [
         'commands.commands',  # Basicコマンド
-        'commands.gacha',     # ガチャ
         'commands.janken',    # じゃんけん
         'commands.dice',      # ダイスロール
         'commands.configure', # 参加通知設定コマンド
