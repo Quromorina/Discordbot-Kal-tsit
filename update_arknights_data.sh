@@ -7,9 +7,8 @@
 GIT_USER="Quromorina"
 USER_HOME="/home/$GIT_USER"
 
-ARK_DATA_REPO="$USER_HOME/arknights_yostar_data"
-MYBOT_DIR="$USER_HOME/mybot"
-VENV_PYTHON="$MYBOT_DIR/my_bot_env/bin/python3.11"
+MYBOT_DIR="$USER_HOME/mybot/Discordbot-Kal-tsit"
+VENV_PYTHON="$USER_HOME/mybot/venv/bin/python3"
 POPULATE_SCRIPT="$MYBOT_DIR/populate_db.py"
 LOGFILE="$MYBOT_DIR/logs/populate_update.log"
 
