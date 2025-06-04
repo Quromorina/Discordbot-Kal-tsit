@@ -1,6 +1,8 @@
 import os
 import discord
 import subprocess
+import datetime
+import random
 from discord.ext import commands
 # config.py からトークンを読み込む想定 (config.py が環境変数などから安全に読み込むように実装されていること)
 from config import DISCORD_TOKEN
@@ -50,6 +52,33 @@ async def on_ready():
     print(f'Logged in as {bot.user.name} ({bot.user.id})', flush=True)
     print('------', flush=True)
 
+    # 候補リスト
+    activities = [
+        "ロドスアイランド(シラクーザに停泊中)",
+        "ロドスアイランド(龍門に停泊中)",
+        "ロドスアイランド(移動中)",
+        "ロドスアイランド(not found...)",
+        "ロドスアイランド(イベリアに停泊中)",
+        "ロドスアイランド(メンテナンス作業中)",
+        "ロドスアイランド(チェルノボーグに停泊中)",
+        "ロドスアイランド(クルビアに停泊中)",
+        "ロドスアイランド(カジミエーシュに停泊中)",
+        "ロドスアイランド(ラテラーノに停泊中)",
+        "ロドスアイランド(ヴィクトリアに停泊中)",
+        "ロドスアイランド(リターニアに停泊中)",
+        "ロドスアイランド(イベリアに停泊中)",
+        "ロドスアイランド(イェラグに停泊中)",
+        "ロドスアイランド(シエスタに停泊中)",
+        "ロドスアイランド(サルゴンに停泊中)",
+        "ロドスアイランド(サルゴンに停泊中)",
+    ]
+    # 今週の週番号でシャッフルのシードを決める（毎週1回だけ変わる）
+    week_num = datetime.datetime.now().isocalendar().week
+    rng = random.Random(week_num)
+    shuffled = activities[:]
+    rng.shuffle(shuffled)
+    activity_name = shuffled[0]  # 1週につき1つランダムに決定
+
     # データベース自動作成
     db_path = os.path.join(os.path.dirname(__file__), 'arknights_data.db')
     if not os.path.exists(db_path):
@@ -74,9 +103,8 @@ async def on_ready():
 
     # ステータスメッセージ設定
     try:
-        activity = discord.CustomActivity(name="ロドスアイランド(シラクーザに停泊中)") # ステータスを変更
+        activity = discord.CustomActivity(name=activity_name)
         await bot.change_presence(status=discord.Status.online, activity=activity)
-
     except Exception as e:
         print(f"!!!!! ステータス変更中にエラー: {e} !!!!!", flush=True)
 
