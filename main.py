@@ -3,6 +3,7 @@ import discord
 import subprocess
 import datetime
 import random
+import time
 from discord.ext import commands
 # config.py からトークンを読み込む想定 (config.py が環境変数などから安全に読み込むように実装されていること)
 from config import DISCORD_TOKEN
@@ -73,13 +74,14 @@ async def on_ready():
         "ロドスアイランド(極東に停泊中)"
     ]
 
+    # 3日ごと、なおかつ再起動ごとに変わるアクティビティを設定
     today = datetime.date.today()
-    # 「3日ごと」のグループ番号を計算
     block = today.toordinal() // 3
-    rng = random.Random(block)
-    shuffled = activities[:]
-    rng.shuffle(shuffled)
-    activity_name = shuffled[0]  # 各ブロックごとに1つランダム選出
+    # 再起動ごとに違う値になる「乱数の種」を追加
+    boot_nonce = int(time.time() * 1000000) % 100000  # microsecondsの下5桁
+    total_seed = block + boot_nonce
+    rng = random.Random(total_seed)
+    activity_name = rng.choice(activities)
 
     # データベース自動作成
     db_path = os.path.join(os.path.dirname(__file__), 'arknights_data.db')
