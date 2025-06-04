@@ -9,7 +9,7 @@ class Basic(commands.Cog):
         self.bot = bot
 
     # /osu
-    @app_commands.command(name="kal'tsit", description="自己診断")
+    @app_commands.command(name="kaltsit", description="自己診断")
     async def ossu(self, interaction: discord.Interaction):
         await interaction.response.send_message("私の診断結果は私が自ら判断しよう。諸君は他の助けを必要としている感染者に力を注いでくれ。")
 
