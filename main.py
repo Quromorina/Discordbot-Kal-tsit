@@ -72,12 +72,14 @@ async def on_ready():
         "ロドスアイランド(サルゴンに停泊中)",
         "ロドスアイランド(サルゴンに停泊中)",
     ]
-    # 今週の週番号でシャッフルのシードを決める（毎週1回だけ変わる）
-    week_num = datetime.datetime.now().isocalendar().week
-    rng = random.Random(week_num)
+    
+    today = datetime.date.today()
+    # 「3日ごと」のグループ番号を計算
+    block = today.toordinal() // 3
+    rng = random.Random(block)
     shuffled = activities[:]
     rng.shuffle(shuffled)
-    activity_name = shuffled[0]  # 1週につき1つランダムに決定
+    activity_name = shuffled[0]  # 各ブロックごとに1つランダム選出
 
     # データベース自動作成
     db_path = os.path.join(os.path.dirname(__file__), 'arknights_data.db')
