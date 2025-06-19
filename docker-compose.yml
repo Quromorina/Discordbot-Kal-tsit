@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  discord-bot:
+    build: .
+    container_name: discord-bot
+    restart: always
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - WEATHER_USER_ID=${WEATHER_USER_ID}
+      - WEATHER_FRIEND_ID=${WEATHER_FRIEND_ID}
+      - WEATHER_CITY_NAME=${WEATHER_CITY_NAME}
+      - WEATHER_NOTIFY_TIME=${WEATHER_NOTIFY_TIME}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./arknights_data.db:/app/arknights_data.db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

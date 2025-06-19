@@ -59807,3 +59807,35 @@ Populate script successful.
 Restarting discord-bot.service...
 Service restarted successfully.
 --- Fri  2 May 10:05:03 JST 2025 --- Arknights Data Update Completed Successfully. ---
+--- Fri  6 Jun 23:00:01 JST 2025 --- Starting Arknights Data Update Script ---
+Updating Arknights data submodule (ark_data)...
+Submodule path 'ark_data' not initialized
+Maybe you want to use 'update --init'?
+Git pull successful.
+Running populate_db.py...
+データリポジトリのパス: /home/Quromorina/mybot/Discordbot-Kal-tsit/ark_data
+データベースファイルのパス: /home/Quromorina/mybot/Discordbot-Kal-tsit/arknights_data.db
+読み込んだクラス日本語マップ: 8 件
+読み込んだ職分日本語マップ: 63 件
+エラー: JSONファイルが見つかりません！ パス設定を確認してください。: [Errno 2] No such file or directory: '/home/Quromorina/mybot/Discordbot-Kal-tsit/ark_data/ja_JP/gamedata/excel/character_table.json'
+Populate script successful.
+Restarting discord-bot (docker-compose)...
+No containers to restart
+1
+--- Fri  6 Jun 23:00:03 JST 2025 --- docker-compose restart failed (status 1). ---
+--- Fri 13 Jun 23:00:01 JST 2025 --- Starting Arknights Data Update Script ---
+Updating Arknights data submodule (ark_data)...
+Submodule path 'ark_data' not initialized
+Maybe you want to use 'update --init'?
+Git pull successful.
+Running populate_db.py...
+データリポジトリのパス: /home/Quromorina/mybot/Discordbot-Kal-tsit/ark_data
+データベースファイルのパス: /home/Quromorina/mybot/Discordbot-Kal-tsit/arknights_data.db
+読み込んだクラス日本語マップ: 8 件
+読み込んだ職分日本語マップ: 63 件
+エラー: JSONファイルが見つかりません！ パス設定を確認してください。: [Errno 2] No such file or directory: '/home/Quromorina/mybot/Discordbot-Kal-tsit/ark_data/ja_JP/gamedata/excel/character_table.json'
+Populate script successful.
+Restarting discord-bot (docker-compose)...
+No containers to restart
+1
+--- Fri 13 Jun 23:00:03 JST 2025 --- docker-compose restart failed (status 1). ---
