@@ -42,32 +42,33 @@ class WeatherNotify(commands.Cog):
         weather_message = await self._get_weather_info()
 
         # 2) 所感を取得
-        gemini_cog: GeminiChat = self.bot.get_cog('GeminiChat')
-        if gemini_cog and gemini_cog.model:
-            instruction = (
-                "上記の天気予報データに基づき、今日の活動で注意すべき点、"
-                "及び推奨される服装について、君の見解を述べたまえ。"
-            )
-            try:
-                commentary = await gemini_cog.generate_commentary(
-                    context=weather_message,
-                    instruction=instruction
-                )
-            except Exception as e:
-                print(f"❌ Commentary生成中にエラー: {e}")
-                commentary = "所感の生成に失敗しました。"
-        else:
-            commentary = ""
+        #gemini_cog: GeminiChat = self.bot.get_cog('GeminiChat')
+        #if gemini_cog and gemini_cog.model:
+        #    instruction = (
+        #        "上記の天気予報データに基づき、今日の活動で注意すべき点、"
+        #        "及び推奨される服装について、君の見解を述べたまえ。"
+        #    )
+        #    try:
+        #        commentary = await gemini_cog.generate_commentary(
+        #            context=weather_message,
+        #            instruction=instruction
+        #        )
+        #   except Exception as e:
+        #        print(f"❌ Commentary生成中にエラー: {e}")
+        #        commentary = "所感の生成に失敗しました。"
+        #else:
+        #    commentary = ""
 
         # 3) full_message を組み立て
-        if commentary:
-            full_message = (
-                f"{weather_message}\n"
-                "以下に示すのは天候予測に基づく私の見解だ。\n"
-                f"---\n{commentary}"
-            )
-        else:
-            full_message = weather_message
+        #if commentary:
+        #    full_message = (
+        #        f"{weather_message}\n"
+        #        "以下に示すのは天候予測に基づく私の見解だ。\n"
+        #        f"---\n{commentary}"
+        #    )
+        #else:
+        #    full_message = weather_message
+        full_message = weather_message
 
         # 4) 送信先リストを作成
         send_funcs = []
