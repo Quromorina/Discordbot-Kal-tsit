@@ -41,7 +41,7 @@ class GeminiChat(commands.Cog):
             genai.configure(api_key=self.api_key)
             # ここで使用するモデルを指定 (例: 'gemini-1.5-flash', 'gemini-pro' など)
             # 利用可能なモデルはGoogle AI Studio等で確認してください
-            self.model = genai.GenerativeModel('gemini-1.5-flash') # ← 必要ならモデル名を変更してね！
+            self.model = genai.GenerativeModel('gemini-2.5-flash') # ← 必要ならモデル名を変更してね！
             print("✅ Gemini モデルの初期化に成功しました！")
         except Exception as e:
             print(f"❌ Gemini モデルの初期化中にエラーが発生しました: {e}")
